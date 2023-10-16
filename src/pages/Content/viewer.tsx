@@ -51,7 +51,7 @@ export function ResultsViewer(props: { response: SearchTermResponse }) {
                 {
                     response.hsk.slice(0, MAX_HSK_WORDS).map((entry, index) => {
                         return <div className='hanbaobao-knownwords-entry'>
-                            <span className='hanbaobao-knownwords-entry-chinese'>{entry.word} - HSK {entry.level}</span>
+                            <span className='hanbaobao-knownwords-entry-chinese'>HSK {entry.level} - {entry.word}</span>
                         </div>
                     })
                 }
