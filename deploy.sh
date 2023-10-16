@@ -11,6 +11,14 @@ if [ ! -d $DEST ]; then
     exit 1
 fi
 
+echo "Deploying to $DEST. This will delete everything in the destination directory. Continue? (y/n)"
+read -r RESPONSE
+
+if [[ ! "$RESPONSE" =~ ^([yY][eE][sS]|[yY])+$ ]]; then
+    echo "Aborting"
+    exit 1
+fi
+
 # Delete everything in the destination directory
 rm -rf $DEST/*
 
