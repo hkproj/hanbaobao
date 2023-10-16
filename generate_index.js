@@ -1,9 +1,11 @@
 var fs = require('fs')
 var path = require('path')
 
+DATA_DIR = path.join(__dirname, 'src/assets/data')
+
 // Load the dictionary file as JSON
-var dictionary = JSON.parse(fs.readFileSync(path.join(__dirname, 'data/dict.json'), 'utf8'))
-var hsk = JSON.parse(fs.readFileSync(path.join(__dirname, 'data/hsk.json'), 'utf8'))
+var dictionary = JSON.parse(fs.readFileSync(path.join(DATA_DIR, 'dict.json'), 'utf8'))
+var hsk = JSON.parse(fs.readFileSync(path.join(DATA_DIR, 'hsk.json'), 'utf8'))
 
 // Create an index of the dictionary entries
 var wordIndex = {}
@@ -20,12 +22,11 @@ for (var i = 0; i < dictionary.length; ++i) {
         wordIndex[entry.traditional] = []
     }
 
-    // Add the index of the entry to the list of indices for the simplified and traditional characters
-    if (!(i in wordIndex[entry.simplified])) {
+    if (!wordIndex[entry.simplified].includes(i)) {
         wordIndex[entry.simplified].push(i)
     }
 
-    if (!(i in wordIndex[entry.traditional])) {
+    if (!wordIndex[entry.traditional].includes(i)) {
         wordIndex[entry.traditional].push(i)
     }
 }
@@ -51,7 +52,7 @@ for (var i = 0; i < hsk.length; ++i) {
             hskWordIndex[char] = []
         }
 
-        if (!(i in hskWordIndex[char])) {
+        if (!hskWordIndex[char].includes(i)) {
             hskWordIndex[char].push(i)
         }
     }
@@ -67,7 +68,7 @@ for (var key in hskWordIndex) {
 }
 
 // Save the wordIndex into a file
-fs.writeFileSync(path.join(__dirname, 'data/dict_index.json'), JSON.stringify(wordIndexArray), 'utf8')
+fs.writeFileSync(path.join(DATA_DIR, 'dict_index.json'), JSON.stringify(wordIndexArray), 'utf8')
 
 // Save the hskWordIndex into a file
-fs.writeFileSync(path.join(__dirname, 'data/hsk_index.json'), JSON.stringify(hskWordIndexArray), 'utf8')
+fs.writeFileSync(path.join(DATA_DIR, 'hsk_index.json'), JSON.stringify(hskWordIndexArray), 'utf8')

@@ -23,7 +23,5 @@ fi
 rm -rf $DEST/*
 
 # Copy to the destination directory
-cp -r data $DEST/
-cp -r dist $DEST/
-cp -r icons $DEST/
-cp manifest.json $DEST/
+cp -r build $DEST/
+cp -r zip $DEST/

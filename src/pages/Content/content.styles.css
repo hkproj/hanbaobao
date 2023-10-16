@@ -1,0 +1,85 @@
+#hanbaobao-window {
+    width: auto;
+    height: auto;
+    color: #000000;
+    margin: 0px;
+    letter-spacing: normal;
+    text-align: left;
+    text-decoration: none;
+    text-indent: 0px;
+    text-transform: none;
+    white-space: normal;
+    word-spacing: normal;
+    font-weight: normal;
+    font-size: 14px;
+    font-family: Tahoma, sans-serif;
+    visibility: visible;
+    position: absolute;
+    z-index: 999999999;
+    border: 1px solid #D0D0D0 !important;
+    padding: 4px;
+    background: rgb(255, 255, 191);
+    top: 5px;
+    left: 5px;
+    min-width: 200px;
+    border-radius: 5px;
+    box-shadow: 10px 10px 5px -5px #999;
+}
+
+.hanbaobao-section-title {
+    font-weight: bold;
+}
+
+.hanbaobao-pinyin-tone-1 {
+    color: #007bff;
+}
+
+.hanbaobao-pinyin-tone-2 {
+    color: #e83e8c;
+}
+
+.hanbaobao-pinyin-tone-3 {
+    color: #fd7e14;
+}
+
+.hanbaobao-pinyin-tone-4 {
+    color: #28a745;
+}
+
+.hanbaobao-pinyin-tone-5 {
+    color: #6610f2;
+}
+
+.hanbaobao-knownwords-list {
+    padding: 2px;
+}
+
+.hanbaobao-knownwords-entry {
+    margin: 2px;
+}
+
+.hanbaobao-dictionary-list {
+    padding: 2px;
+}
+
+.hanbaobao-dictionary-entry {
+    margin: 2px;
+}
+
+.hanbaobao-dictionary-entry-chinese {
+    /* use visibility as placeholder for empty ruleset */
+    visibility: visible;
+}
+
+.hanbaobao-dictionary-entry-chinese-simplified {
+    margin-right: 4px;
+}
+
+.hanbaobao-dictionary-entry-chinese-pinyin span {
+    margin-right: 2px;
+}
+
+.hanbaobao-dictionary-entry-definitions {
+    /* use visibility as placeholder for empty ruleset */
+    visibility: visible;
+}
