@@ -18,5 +18,6 @@ export interface SearchTermRequest extends GenericRequest {
 export interface SearchTermResponse {
     dictionary: ChineseDictionarySearchResults
     hsk: Array<HSKVocabularyEntry>
-    status: ResourceLoadStatus
+    status: ResourceLoadStatus,
+    serviceEnabled: boolean,
 }

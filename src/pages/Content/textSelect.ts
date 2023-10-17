@@ -24,7 +24,7 @@ export function findNextTextNode(root: Node, previous: Node): Node | null {
     }
 }
 
-export function getWordUnderCursor(event: MouseEvent): [string, Node] {
+export function getWordUnderCursor(event: MouseEvent): [string, Node|null] {
     var range, textNode, offset
     // Original code: https://stackoverflow.com/a/30606508/739636
     // @ts-ignore
@@ -32,11 +32,17 @@ export function getWordUnderCursor(event: MouseEvent): [string, Node] {
         // Firefox
         // @ts-ignore
         range = document.caretPositionFromPoint(event.clientX, event.clientY)
+        if (!range || !range.offsetNode || !range.offset) {
+            return ["", null];
+        }
         textNode = range.offsetNode
         offset = range.offset
     } else if (document.caretRangeFromPoint) {
         // Chrome
         range = document.caretRangeFromPoint(event.clientX, event.clientY)
+        if (range == null || range.startContainer == null || range.startOffset == null) {
+            return ["", null];
+        }
         textNode = range!.startContainer
         offset = range!.startOffset
     }

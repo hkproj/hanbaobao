@@ -1,6 +1,7 @@
 import { ResourceLoadStatus } from "../../shared/loading";
 import { GenericRequest, RequestType, SearchTermRequest, SearchTermResponse } from "../../shared/messages";
 import { ChineseDictionary, ChineseDictionaryEntry, HSKVocabulary, HSKVocabularyEntry, WordIndex, getWordsWithSameCharacter, searchWordInChineseDictionary } from "./chinese";
+import { ConfigurationKey, readConfiguration, writeConfiguration } from "./configuration";
 
 let enabled: boolean = false;
 
@@ -65,6 +66,7 @@ async function loadDictionaries() {
 // Load dictionaries
 (async () => {
     await loadDictionaries()
+    enabled = await readConfiguration(ConfigurationKey.ENABLED, false)
 })()
 
 function updateActionBadgeText() {
@@ -75,12 +77,14 @@ function updateActionBadgeText() {
     }
 }
 
-chrome.runtime.onInstalled.addListener(() => {
+chrome.runtime.onInstalled.addListener(async () => {
     updateActionBadgeText()
+    await writeConfiguration(ConfigurationKey.ENABLED, false)
 })
 
-chrome.action.onClicked.addListener((tab) => {
-    enabled = !enabled
+chrome.action.onClicked.addListener(async (tab) => {
+    await writeConfiguration(ConfigurationKey.ENABLED, !enabled)
+    enabled = await readConfiguration(ConfigurationKey.ENABLED, false)
     updateActionBadgeText()
 })
 
@@ -93,7 +97,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             const response: SearchTermResponse = {
                 dictionary: { data: [], maxMatchLen: 0 },
                 hsk: [],
-                status: dictionaryLoadStatus
+                status: dictionaryLoadStatus,
+                serviceEnabled: enabled
             }
 
             if (dictionaryLoadStatus === ResourceLoadStatus.Unloaded || !enabled) {

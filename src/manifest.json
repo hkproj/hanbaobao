@@ -10,6 +10,9 @@
   "icons": {
     "128": "icon-128.png"
   },
+  "permissions": [
+    "storage"
+  ],
   "content_scripts": [
     {
       "matches": [

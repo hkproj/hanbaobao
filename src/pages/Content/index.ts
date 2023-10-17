@@ -20,7 +20,11 @@ function displayOrUpdateResults(response: SearchTermResponse) {
     appContainer?.style.setProperty('top', `${mousePosition.pageY + yOffset}px`)
     appContainer?.style.setProperty('left', `${mousePosition.pageX + xOffset}px`)
 
-    if (response.status != ResourceLoadStatus.Loaded || (response.dictionary.data.length == 0 && response.hsk.length == 0)) {
+    if (response.serviceEnabled == false) {
+        // console.log("Service is disabled")
+    }
+
+    if (response.status != ResourceLoadStatus.Loaded || (response.dictionary.data.length == 0 && response.hsk.length == 0) || response.serviceEnabled == false) {
         appContainer!.style.display = 'none';
     } else {
         appContainer!.style.display = 'block';
@@ -52,9 +56,12 @@ const onMouseMove = function (e: MouseEvent) {
 
     // Search the dictionary
     const [wordUnderCursor, node] = getWordUnderCursor(e)
+    if (wordUnderCursor == "" || node == null) {
+        return
+    }
     nodeUnderCursor = node
 
-    // console.log(`Word under cursor: ${wordUnderCursor}`)
+    // console.log(`Word under cursor: ${wordUnderCursor} - Node: ${node}`)
     const request: SearchTermRequest = { type: RequestType.SearchTerm, searchTerm: wordUnderCursor }
 
     chrome.runtime.sendMessage(request)
