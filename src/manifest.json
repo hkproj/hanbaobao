@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "汉宝宝",
-  "description": "Write description in the package file, because it will be overwritten.",
+  "description": "Chinese dictionary that keeps track of known words and words with similar characters.",
   "options_page": "options.html",
   "background": {
     "service_worker": "background.bundle.js"
