@@ -1,7 +1,7 @@
 import { ResourceLoadStatus } from "../../shared/loading";
 import { GenericRequest, RequestType, SearchTermRequest, SearchTermResponse } from "../../shared/messages";
 import { ChineseDictionary, ChineseDictionaryEntry, HSKVocabulary, HSKVocabularyEntry, WordIndex, getWordsWithSameCharacter, searchWordInChineseDictionary } from "./chinese";
-import { ConfigurationKey, readConfiguration, writeConfiguration } from "./configuration";
+import { ConfigurationKey, readConfiguration, writeConfiguration } from "../../shared/configuration";
 
 let enabled: boolean = false;
 
@@ -67,6 +67,7 @@ async function loadDictionaries() {
 (async () => {
     await loadDictionaries()
     enabled = await readConfiguration(ConfigurationKey.ENABLED, false)
+    updateActionBadgeText()
 })()
 
 function updateActionBadgeText() {
@@ -79,7 +80,7 @@ function updateActionBadgeText() {
 
 chrome.runtime.onInstalled.addListener(async () => {
     updateActionBadgeText()
-    await writeConfiguration(ConfigurationKey.ENABLED, false)
+    await writeConfiguration(ConfigurationKey.ENABLED, enabled)
 })
 
 chrome.action.onClicked.addListener(async (tab) => {
