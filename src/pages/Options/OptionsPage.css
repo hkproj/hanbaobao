@@ -1,0 +1,11 @@
+.options-tabs {
+  width: 800px;
+}
+
+.options-single-tab {
+  padding: 0px;
+}
+
+.options-single-tab .page-card {
+  padding: 4px;
+}

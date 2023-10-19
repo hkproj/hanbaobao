@@ -24,10 +24,25 @@
     min-width: 200px;
     border-radius: 5px;
     box-shadow: 10px 10px 5px -5px #999;
+    max-width: 500px;
+}
+
+.hanbaobao-results-container {
+    padding-left: 0px;
+    padding-right: 0px;
+}
+
+.hanbaobao-section {
+    background:rgb(255, 255, 191);
+}
+
+.hanbaobao-section .card-body {
+    padding: 0px;
 }
 
 .hanbaobao-section-title {
     font-weight: bold;
+    min-width: 200px;
 }
 
 .hanbaobao-pinyin-tone-1 {

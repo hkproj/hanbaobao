@@ -1,7 +1,7 @@
 import { RequestType, SearchTermRequest, SearchTermResponse } from "../../shared/messages"
 import { getWordUnderCursor } from "./textSelect"
 import { Root, createRoot } from 'react-dom/client';
-import { ResultsViewer } from "./viewer";
+import { ResultsViewer } from "./ResultsViewer";
 import { ResourceLoadStatus } from "../../shared/loading";
 
 let appContainer: HTMLDivElement | null = null;
@@ -24,7 +24,7 @@ function displayOrUpdateResults(response: SearchTermResponse) {
         // console.log("Service is disabled")
     }
 
-    if (response.status != ResourceLoadStatus.Loaded || (response.dictionary.data.length == 0 && response.hsk.length == 0) || response.serviceEnabled == false) {
+    if (response.status != ResourceLoadStatus.Loaded || (response.dictionary.data.length == 0 && response.hsk.length == 0 && response.knownWords.length == 0) || response.serviceEnabled == false) {
         appContainer!.style.display = 'none';
     } else {
         appContainer!.style.display = 'block';

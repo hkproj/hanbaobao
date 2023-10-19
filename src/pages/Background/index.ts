@@ -1,16 +1,24 @@
 import { ResourceLoadStatus } from "../../shared/loading";
-import { GenericRequest, RequestType, SearchTermRequest, SearchTermResponse } from "../../shared/messages";
-import { ChineseDictionary, ChineseDictionaryEntry, HSKVocabulary, HSKVocabularyEntry, WordIndex, getWordsWithSameCharacter, searchWordInChineseDictionary } from "./chinese";
+import { DUMMY_CONTENT, GenericRequest, RequestType, SearchTermRequest, SearchTermResponse, UpdateConfigurationResponse, UpdateKnownWordsResponse } from "../../shared/messages";
+import { ChineseDictionary, ChineseDictionaryEntry, HSKVocabulary, HSKVocabularyEntry, WordIndex, getHSKWordsWithSameCharacter, searchWordInChineseDictionary, getKnownWordsWithSameCharacter } from "../../shared/chineseUtils";
 import { ConfigurationKey, readConfiguration, writeConfiguration } from "../../shared/configuration";
 
-let enabled: boolean = false;
+// Set default configuration values here
+let searchServiceEnabled: boolean = false;
+let hskEnabled: boolean = true;
+let knownWordsEnabled: boolean = true;
+let configurationSchemaVersion: number = 1;
 
 let hsk: HSKVocabulary | null = null;
 let hskIndex: WordIndex | null = null;
 let dictionary: ChineseDictionary | null = null;
 let dictionaryIndex: WordIndex | null = null;
 
+let knownWordsIndex: WordIndex | null = null;
+let knownWordsList: Array<string> | null = null;
+
 let dictionaryLoadStatus: ResourceLoadStatus = ResourceLoadStatus.Unloaded
+let knownWordsLoadStatus: ResourceLoadStatus = ResourceLoadStatus.Unloaded
 
 async function loadDictionaries() {
     let hskFile = await fetch(chrome.runtime.getURL("data/hsk.json"))
@@ -63,15 +71,95 @@ async function loadDictionaries() {
     dictionaryLoadStatus = ResourceLoadStatus.Loaded
 }
 
-// Load dictionaries
-(async () => {
-    await loadDictionaries()
-    enabled = await readConfiguration(ConfigurationKey.ENABLED, false)
+async function loadKnownWords() {
+
+    const knownWordsIndexRaw = await readConfiguration(ConfigurationKey.KNOWN_WORDS_INDEX, []) as any
+    knownWordsList = await readConfiguration(ConfigurationKey.KNOWN_WORDS, []) as Array<string>
+    console.log(`Known words list entries count: ${knownWordsList.length}`)
+
+    knownWordsIndex = new Map<string, Array<number>>()
+    console.log(`Known words index entries: ${knownWordsIndexRaw.length}`)
+    for (let i = 0; i < knownWordsIndexRaw.length; ++i) {
+        let entry = knownWordsIndexRaw[i]
+        knownWordsIndex.set(entry.key, entry.indices)
+    }
+
+    knownWordsLoadStatus = ResourceLoadStatus.Loaded
+}
+
+async function loadConfiguration() {
+    searchServiceEnabled = await readConfiguration(ConfigurationKey.SEARCH_SERVICE_ENABLED, searchServiceEnabled)
+    hskEnabled = await readConfiguration(ConfigurationKey.HSK_ENABLED, hskEnabled)
+    knownWordsEnabled = await readConfiguration(ConfigurationKey.KNOWN_WORDS_ENABLED, knownWordsEnabled)
     updateActionBadgeText()
-})()
+}
+
+chrome.action.onClicked.addListener(async (tab) => {
+    await writeConfiguration(ConfigurationKey.SEARCH_SERVICE_ENABLED, !searchServiceEnabled)
+    searchServiceEnabled = await readConfiguration(ConfigurationKey.SEARCH_SERVICE_ENABLED, false)
+    updateActionBadgeText()
+})
+
+chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
+    const req = request as GenericRequest
+
+    switch (req.type) {
+        case RequestType.SearchTerm:
+            const searchTermRequest = req as SearchTermRequest
+            const searchResponse: SearchTermResponse = {
+                dummy: DUMMY_CONTENT,
+                dictionary: { data: [], maxMatchLen: 0 },
+                hsk: [],
+                knownWords: [],
+                status: dictionaryLoadStatus,
+                serviceEnabled: searchServiceEnabled
+            }
+
+            if (dictionaryLoadStatus === ResourceLoadStatus.Unloaded || !searchServiceEnabled) {
+                sendResponse(searchResponse)
+                return
+            }
+
+            const word = searchTermRequest.searchTerm
+            const dictionaryResults = searchWordInChineseDictionary(word, dictionaryIndex!, dictionary!)
+            const character = word[0]
+
+            let hskResults: Array<HSKVocabularyEntry> = []
+            if (hskEnabled) {
+                hskResults = getHSKWordsWithSameCharacter(character, hsk!, hskIndex!)
+            }
+
+            let knownWordsResults: string[] = []
+            if (knownWordsEnabled) {
+                knownWordsResults = getKnownWordsWithSameCharacter(character, knownWordsList!, knownWordsIndex!)
+            }
+
+            searchResponse.dictionary = dictionaryResults
+            searchResponse.hsk = hskResults
+            searchResponse.knownWords = knownWordsResults
+            sendResponse(searchResponse)
+            break
+        case RequestType.UpdateKnownWords:
+            await loadKnownWords()
+            const updateKnownWordsResponse: UpdateKnownWordsResponse = { dummy: DUMMY_CONTENT }
+            console.log('Known words index updated.')
+            sendResponse(updateKnownWordsResponse)
+            break
+        case RequestType.UpdateConfiguration:
+            await loadConfiguration()
+            const updateConfigurationResponse: UpdateConfigurationResponse = { dummy: DUMMY_CONTENT }
+            console.log('Configuration updated.')
+            sendResponse(updateConfigurationResponse)
+            break
+        default:
+            break
+    }
+
+    return true
+})
 
 function updateActionBadgeText() {
-    if (enabled) {
+    if (searchServiceEnabled) {
         chrome.action.setBadgeText({ text: "ON" })
     } else {
         chrome.action.setBadgeText({ text: "OFF" })
@@ -79,45 +167,15 @@ function updateActionBadgeText() {
 }
 
 chrome.runtime.onInstalled.addListener(async () => {
-    updateActionBadgeText()
-    await writeConfiguration(ConfigurationKey.ENABLED, enabled)
-})
+    // Read configuration or set default values if missing
+    loadConfiguration()
+});
 
-chrome.action.onClicked.addListener(async (tab) => {
-    await writeConfiguration(ConfigurationKey.ENABLED, !enabled)
-    enabled = await readConfiguration(ConfigurationKey.ENABLED, false)
-    updateActionBadgeText()
-})
-
-chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-    const req = request as GenericRequest
-
-    switch (req.type) {
-        case RequestType.SearchTerm:
-            const searchTermRequest = req as SearchTermRequest
-            const response: SearchTermResponse = {
-                dictionary: { data: [], maxMatchLen: 0 },
-                hsk: [],
-                status: dictionaryLoadStatus,
-                serviceEnabled: enabled
-            }
-
-            if (dictionaryLoadStatus === ResourceLoadStatus.Unloaded || !enabled) {
-                sendResponse(response)
-                return;
-            }
-
-            const word = searchTermRequest.searchTerm
-            const dictionaryResults = searchWordInChineseDictionary(word, dictionaryIndex!, dictionary!)
-            const character = word[0]
-            const hskResults = getWordsWithSameCharacter(character, hsk!, hskIndex!)
-
-            response.dictionary = dictionaryResults
-            response.hsk = hskResults
-            sendResponse(response)
-            break;
-
-        default:
-            break;
-    }
-})
+(async () => {
+    // Load configuration
+    await loadConfiguration()
+    // Load dictionaries
+    await loadDictionaries()
+    // Load known words
+    await loadKnownWords()
+})()

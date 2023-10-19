@@ -44,12 +44,24 @@ export function searchWordInChineseDictionary(word: string, wordIndex: WordIndex
     return results;
 }
 
-export function getWordsWithSameCharacter(charToSearch: string, vocabulary: HSKVocabulary, index: WordIndex): Array<HSKVocabularyEntry> {
+export function getHSKWordsWithSameCharacter(charToSearch: string, vocabulary: HSKVocabulary, index: WordIndex): Array<HSKVocabularyEntry> {
     const results: Array<HSKVocabularyEntry> = [];
     if (index.has(charToSearch)) {
         var entryIndices = index.get(charToSearch)!;
         entryIndices.forEach((entryIndex) => {
             results.push(vocabulary[entryIndex]);
+        })
+    }
+
+    return results;
+}
+
+export function getKnownWordsWithSameCharacter(charToSearch: string, knownWordsList: Array<string>, index: WordIndex): Array<string> {
+    const results: Array<string> = [];
+    if (index.has(charToSearch)) {
+        var entryIndices = index.get(charToSearch)!;
+        entryIndices.forEach((entryIndex) => {
+            results.push(knownWordsList[entryIndex]);
         })
     }
 
@@ -74,28 +86,6 @@ const UNICODE_TONES = new Map([
 
 export function parseTones(s: string) {
     return s.match(/([^AEIOU:aeiou]*)([AEIOUaeiou:]+)([^aeiou:]*)([1-5])/);
-}
-
-function isChineseCharacter(char: number): boolean {
-    return !isNaN(char) && (
-        char === 0x25CB ||
-        (0x3400 <= char && char <= 0x9FFF) ||
-        (0xF900 <= char && char <= 0xFAFF) ||
-        (0xFF21 <= char && char <= 0xFF3A) ||
-        (0xFF41 <= char && char <= 0xFF5A) ||
-        (0xD800 <= char && char <= 0xDFFF)
-    );
-}
-
-export function getChineseCharacters(text: string): string {
-    var chineseChars = ""
-    for (var chPos = 0; chPos < text.length; chPos++) {
-        var currentChar = text.charCodeAt(chPos);
-        if (isChineseCharacter(currentChar)) {
-            chineseChars += text[chPos]
-        }
-    }
-    return chineseChars
 }
 
 export function tonifyPinyin(vowels: any, tone: string) {
@@ -126,4 +116,26 @@ export function tonifyPinyin(vowels: any, tone: string) {
     }
 
     return [html, text];
+}
+
+export function isChineseCharacter(char: number): boolean {
+    return !isNaN(char) && (
+        char === 0x25CB ||
+        (0x3400 <= char && char <= 0x9FFF) ||
+        (0xF900 <= char && char <= 0xFAFF) ||
+        (0xFF21 <= char && char <= 0xFF3A) ||
+        (0xFF41 <= char && char <= 0xFF5A) ||
+        (0xD800 <= char && char <= 0xDFFF)
+    );
+}
+
+export function getChineseCharacters(text: string): string {
+    var chineseChars = ""
+    for (var chPos = 0; chPos < text.length; chPos++) {
+        var currentChar = text.charCodeAt(chPos);
+        if (isChineseCharacter(currentChar)) {
+            chineseChars += text[chPos]
+        }
+    }
+    return chineseChars
 }
