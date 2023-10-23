@@ -4,7 +4,7 @@ import Button from 'react-bootstrap/Button';
 import Form from 'react-bootstrap/Form';
 import { ConfigurationKey, readConfiguration, writeConfiguration } from '../../shared/configuration';
 import { getChineseCharacters } from '../../shared/chineseUtils';
-import { Card, Table } from 'react-bootstrap';
+import { Card, Modal, Table } from 'react-bootstrap';
 import { RequestType, UpdateConfigurationRequest, UpdateKnownWordsRequest } from '../../shared/messages';
 import { notifyBackgroundServiceNewConfiguration } from './OptionsPage';
 import './KnownWordsView.css'
@@ -16,6 +16,7 @@ const KnownWordsView: React.FC = () => {
 
     const [knownWords, setKnownWords] = useState<Array<string>>([]);
     const [wordsFilter, setWordsFilter] = useState<string>("");
+    const [showDeleteAllModal, setShowDeleteAllModal] = useState<boolean>(false);
 
     const [importWordsText, setImportWordsText] = useState<string>("");
 
@@ -111,6 +112,28 @@ const KnownWordsView: React.FC = () => {
         updateKnownWords(newKnownWords);
     }
 
+    function exportToFile(knownWords: Array<string>) {
+        const blob = new Blob([knownWords.join("\n")], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        chrome.downloads.download({
+            url: url,
+            filename: "known-words.txt"
+        });
+    }
+
+    function handleShowDeleteAllModal() {
+        setShowDeleteAllModal(true);
+    }
+
+    function handleCloseDeleteAllModal() {
+        setShowDeleteAllModal(false);
+    }
+
+    function handleDeleteAllKnownWords() {
+        setShowDeleteAllModal(false);
+        updateKnownWords([]);
+    }
+
     const columns = [
         {
             key: "id",
@@ -156,9 +179,33 @@ const KnownWordsView: React.FC = () => {
             <Card.Body>
                 <Card.Title>Manage known words</Card.Title>
                 <Form>
-                    <Form.Group>
+                    <Form.Group className="mb-3">
                         <Form.Label htmlFor="wordsFilter">Filter</Form.Label>
                         <Form.Control id="wordsFilter" as="input" value={wordsFilter} readOnly={false} onChange={(e) => setWordsFilter(e.target.value)} />
+                    </Form.Group>
+                    <Form.Group className="mb-3">
+                        <Button variant="danger" onClick={handleShowDeleteAllModal}>Delete all</Button>
+                        <Modal show={showDeleteAllModal} onHide={handleCloseDeleteAllModal}>
+                            <Modal.Header closeButton>
+                                <Modal.Title>
+                                    Delete all known words?
+                                </Modal.Title>
+                            </Modal.Header>
+                            <Modal.Body>
+                                If you press yes, all known words will be deleted. This action cannot be undone.
+                            </Modal.Body>
+                            <Modal.Footer>
+                                <Button variant="secondary" onClick={handleCloseDeleteAllModal}>
+                                    No
+                                </Button>
+                                <Button variant="primary" onClick={handleDeleteAllKnownWords}>
+                                    Yes
+                                </Button>
+                            </Modal.Footer>
+                        </Modal>
+                    </Form.Group>
+                    <Form.Group className="mb-3">
+                        <Button onClick={() => exportToFile(knownWords)}>Export to file</Button>
                     </Form.Group>
                     <Form.Group>
                         <DataGrid columns={columns} rows={rows}></DataGrid>
