@@ -15,7 +15,9 @@
     "128": "icon-128.png"
   },
   "permissions": [
-    "storage"
+    "storage",
+    "unlimitedStorage",
+    "downloads"
   ],
   "content_scripts": [
     {
