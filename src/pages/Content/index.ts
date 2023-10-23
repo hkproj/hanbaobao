@@ -7,6 +7,8 @@ import { ResourceLoadStatus } from "../../shared/loading";
 let appContainer: HTMLDivElement | null = null;
 let appRoot: Root | null = null;
 
+const MIN_MOUSE_DISTANCE = 5;
+
 let mousePosition: { clientX: number, clientY: number, pageX: number, pageY: number } = { clientX: 0, clientY: 0, pageX: 0, pageY: 0 }
 let nodeUnderCursor: Node | null = null
 
@@ -51,6 +53,15 @@ function createContainers() {
 }
 
 const onMouseMove = function (e: MouseEvent) {
+    
+    // Check if compared to the old position the mouse has moved enough
+    const dx = e.clientX - mousePosition.clientX
+    const dy = e.clientY - mousePosition.clientY
+    const distance = Math.sqrt(dx * dx + dy * dy)
+    if (distance < MIN_MOUSE_DISTANCE) {
+        return
+    }
+
     // Update the mouse position
     mousePosition = { clientX: e.clientX, clientY: e.clientY, pageX: e.pageX, pageY: e.pageY }
 
