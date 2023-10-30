@@ -1,7 +1,8 @@
 import { ResourceLoadStatus } from "../../shared/loading";
-import { DUMMY_CONTENT, GenericRequest, RequestType, SearchTermRequest, SearchTermResponse, UpdateConfigurationResponse, UpdateKnownWordsResponse } from "../../shared/messages";
+import { DUMMY_CONTENT, GenericRequest, GetSelectedTextRequest, GetSelectedTextResponse, RequestType, SearchTermRequest, SearchTermResponse, SegmentTextRequest, SegmentTextResponse, UpdateConfigurationResponse, UpdateKnownWordsResponse } from "../../shared/messages";
 import { ChineseDictionary, ChineseDictionaryEntry, HSKVocabulary, HSKVocabularyEntry, WordIndex, getHSKWordsWithSameCharacter, searchWordInChineseDictionary, getKnownWordsWithSameCharacter } from "../../shared/chineseUtils";
 import { ConfigurationKey, readConfiguration, writeConfiguration } from "../../shared/configuration";
+import { JiebaData, JiebaDictionary, JiebaDictionaryEntry, cut, initialize } from "../../shared/jieba";
 
 // Set default configuration values here
 let searchServiceEnabled: boolean = false;
@@ -17,8 +18,55 @@ let dictionaryIndex: WordIndex | null = null;
 let knownWordsIndex: WordIndex | null = null;
 let knownWordsList: Array<string> | null = null;
 
+let jiebaData: JiebaData | null = null;
+
+let selectedTextForReader: string | null = null;
+
 let dictionaryLoadStatus: ResourceLoadStatus = ResourceLoadStatus.Unloaded
 let knownWordsLoadStatus: ResourceLoadStatus = ResourceLoadStatus.Unloaded
+let jiebaLoadStatus: ResourceLoadStatus = ResourceLoadStatus.Unloaded
+
+function createContextMenus() {
+    chrome.contextMenus.removeAll()
+    chrome.contextMenus.create({
+        contexts: ["all"],
+        id: "reader-service",
+        title: "Chinese Reader"
+    })
+    chrome.contextMenus.onClicked.addListener((info, tab) => {
+        if (info.menuItemId === "reader-service") {
+            // Save selected text
+            if (info.selectionText != null) {
+                console.log(`Selected text: ${info.selectionText!}`)
+                selectedTextForReader = info.selectionText
+            }
+            // Open a new tab with the reader service
+            chrome.tabs.create({
+                url: chrome.runtime.getURL("reader.html")
+            })
+        }
+    })
+}
+
+async function loadJiebaDictionary() {
+    let jiebaDictionaryFile = await fetch(chrome.runtime.getURL("data/jieba_dict.json"))
+
+    let jiebaDictionaryRaw = await jiebaDictionaryFile.json()
+
+    let jiebaDictionary: JiebaDictionary = new Array<JiebaDictionaryEntry>() 
+    console.log(`Jieba dictionary entries: ${jiebaDictionaryRaw.length}`)
+    for (let i = 0; i < jiebaDictionaryRaw.length; ++i) {
+        let entry = jiebaDictionaryRaw[i]
+        jiebaDictionary.push({
+            word: entry[0],
+            frequency: entry[1],
+            extra: entry[2]
+        })
+    }
+
+    jiebaData = initialize(jiebaDictionary)
+    jiebaLoadStatus = ResourceLoadStatus.Loaded
+}
 
 async function loadDictionaries() {
     let hskFile = await fetch(chrome.runtime.getURL("data/hsk.json"))
@@ -151,6 +199,29 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
             console.log('Configuration updated.')
             sendResponse(updateConfigurationResponse)
             break
+        case RequestType.GetSelectedText:
+            const getSelectedTextRequest = req as GetSelectedTextRequest
+            const getSelectedTextResponse: GetSelectedTextResponse = {
+                dummy: DUMMY_CONTENT,
+                selectedText: selectedTextForReader!
+            }
+            if (getSelectedTextRequest.clean) {
+                selectedTextForReader = null
+            }
+            sendResponse(getSelectedTextResponse)
+            break;
+        case RequestType.SegmentText:
+            const segmentTextRequest = req as SegmentTextRequest
+            const segmentTextResponse: SegmentTextResponse = {
+                dummy: DUMMY_CONTENT,
+                segments: []
+            }
+            if (jiebaLoadStatus === ResourceLoadStatus.Loaded) {
+                const seg = cut(jiebaData!, segmentTextRequest.text)
+                segmentTextResponse.segments = seg
+            }
+            sendResponse(segmentTextResponse)
+            break;
         default:
             break
     }
@@ -178,4 +249,8 @@ chrome.runtime.onInstalled.addListener(async () => {
     await loadDictionaries()
     // Load known words
     await loadKnownWords()
+    // Load Jieba dictionary
+    await loadJiebaDictionary()
+    // Create context menus
+    createContextMenus()
 })()

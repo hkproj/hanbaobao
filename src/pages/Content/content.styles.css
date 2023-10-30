@@ -14,17 +14,28 @@
     font-size: 14px;
     font-family: Tahoma, sans-serif;
     visibility: visible;
-    position: absolute;
-    z-index: 999999999;
-    border: 1px solid #D0D0D0 !important;
     padding: 4px;
     background: rgb(255, 255, 191);
-    top: 5px;
-    left: 5px;
+}
+
+.hanbaobao-window-dynamic {
+    position: absolute;
+    z-index: 999999999;
+    max-width: 500px;
+    max-height: 500px;
     min-width: 200px;
+    border: 1px solid #D0D0D0 !important;
     border-radius: 5px;
     box-shadow: 10px 10px 5px -5px #999;
-    max-width: 500px;
+}
+
+.hanbaobao-window-static {
+    width: 500px;
+    display: block;
+}
+
+#hanbaobao-window .card {
+    border: none;
 }
 
 .hanbaobao-results-container {
@@ -83,7 +94,7 @@
 
 .hanbaobao-dictionary-entry-chinese {
     /* use visibility as placeholder for empty ruleset */
-    visibility: visible;
+    visibility: inherit;
 }
 
 .hanbaobao-dictionary-entry-chinese-simplified {
@@ -96,5 +107,5 @@
 
 .hanbaobao-dictionary-entry-definitions {
     /* use visibility as placeholder for empty ruleset */
-    visibility: visible;
+    visibility: inherit;
 }

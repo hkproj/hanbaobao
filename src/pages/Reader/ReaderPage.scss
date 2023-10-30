@@ -1,0 +1,21 @@
+.segment-list {
+    padding: 2px;
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    align-items: flex-start;
+    gap: 3px;
+    font-size: 22px;
+}
+
+.segment {
+    border: 1px transparent solid;
+    visibility: inherit;
+    background-color: transparent;
+}
+
+.segment:hover {
+    border: 1px #000 solid;
+    background-color:rgb(255, 255, 191);;
+}

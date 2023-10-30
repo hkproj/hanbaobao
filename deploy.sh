@@ -1,5 +1,11 @@
 #!/bin/bash
 
+# Read the first argument, if it is "-y" then skip the confirmation prompt
+RESPONSE="n"
+if [ "$1" == "-y" ]; then
+    RESPONSE="y"
+fi
+
 # Run the build script
 npm run build
 
@@ -11,8 +17,12 @@ if [ ! -d $DEST ]; then
     exit 1
 fi
 
-echo "Deploying to $DEST. This will delete everything in the destination directory. Continue? (y/n)"
-read -r RESPONSE
+if [ $RESPONSE == "y" ]; then
+    echo "Skipping confirmation prompt"
+else
+    echo "Deploying to $DEST. This will delete everything in the destination directory. Continue? (y/n)"
+    read -r RESPONSE
+fi
 
 if [[ ! "$RESPONSE" =~ ^([yY][eE][sS]|[yY])+$ ]]; then
     echo "Aborting"

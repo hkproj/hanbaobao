@@ -6,7 +6,9 @@ export const DUMMY_CONTENT = 0;
 export enum RequestType {
     SearchTerm = "search-term",
     UpdateKnownWords = "update-known-words",
-    UpdateConfiguration = "update-configuration"
+    UpdateConfiguration = "update-configuration",
+    GetSelectedText = "get-selected-text",
+    SegmentText = "segment-text",
 }
 
 export interface GenericRequest {
@@ -40,4 +42,20 @@ export interface UpdateConfigurationRequest extends GenericRequest {
 }
 
 export interface UpdateConfigurationResponse extends GenericResponse {
+}
+
+export interface GetSelectedTextRequest extends GenericRequest {
+    clean: boolean
+}
+
+export interface GetSelectedTextResponse extends GenericResponse {
+    selectedText: string
+}
+
+export interface SegmentTextRequest extends GenericRequest {
+    text: string
+}
+
+export interface SegmentTextResponse extends GenericResponse {
+    segments: Array<string>
 }

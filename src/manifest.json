@@ -17,7 +17,8 @@
   "permissions": [
     "storage",
     "unlimitedStorage",
-    "downloads"
+    "downloads",
+    "contextMenus"
   ],
   "content_scripts": [
     {
