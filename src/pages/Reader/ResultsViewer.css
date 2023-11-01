@@ -1,0 +1,66 @@
+.hanbaobao-results-container {
+    padding-left: 0px;
+    padding-right: 0px;
+}
+
+.hanbaobao-section {
+    background:rgb(255, 255, 191);
+}
+
+.hanbaobao-section .card-body {
+    padding: 0px;
+}
+
+.hanbaobao-section-title {
+    font-weight: bold;
+    min-width: 200px;
+}
+
+.hanbaobao-pinyin-tone-1 {
+    color: #007bff;
+}
+
+.hanbaobao-pinyin-tone-2 {
+    color: #e83e8c;
+}
+
+.hanbaobao-pinyin-tone-3 {
+    color: #fd7e14;
+}
+
+.hanbaobao-pinyin-tone-4 {
+    color: #28a745;
+}
+
+.hanbaobao-pinyin-tone-5 {
+    color: #6610f2;
+}
+
+.hanbaobao-knownwords-list {
+    padding: 2px;
+}
+
+.hanbaobao-knownwords-entry {
+    margin: 2px;
+}
+
+.hanbaobao-dictionary-list {
+    padding: 2px;
+}
+
+.hanbaobao-dictionary-entry {
+    margin: 2px;
+}
+
+.hanbaobao-dictionary-entry-chinese {
+    /* use visibility as placeholder for empty ruleset */
+    visibility: inherit;
+}
+
+.hanbaobao-dictionary-entry-chinese-simplified {
+    margin-right: 4px;
+}
+
+.hanbaobao-dictionary-entry-chinese-pinyin span {
+    margin-right: 2px;
+}

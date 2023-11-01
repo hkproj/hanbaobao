@@ -6,16 +6,29 @@
     justify-content: flex-start;
     align-items: flex-start;
     gap: 3px;
-    font-size: 22px;
+    font-size: 25px;
 }
 
 .segment {
     border: 1px transparent solid;
     visibility: inherit;
     background-color: transparent;
+    border-bottom: 4px solid transparent;
 }
 
 .segment:hover {
     border: 1px #000 solid;
-    background-color:rgb(255, 255, 191);;
+    background-color:rgb(255, 255, 191);
+}
+
+.segment .unknown {
+    border-bottom-color: rgb(158, 0, 0)
+}
+
+.segment .known {
+    border-bottom-color: rgb(0, 158, 0)
+}
+
+.segment .ignored {
+    border-bottom-color: transparent;
 }
