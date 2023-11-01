@@ -17,18 +17,17 @@
 }
 
 .segment:hover {
-    border: 1px #000 solid;
     background-color:rgb(255, 255, 191);
 }
 
-.segment .unknown {
+.segment-unknown {
     border-bottom-color: rgb(158, 0, 0)
 }
 
-.segment .known {
+.segment-known {
     border-bottom-color: rgb(0, 158, 0)
 }
 
-.segment .ignored {
+.segment-ignored {
     border-bottom-color: transparent;
 }

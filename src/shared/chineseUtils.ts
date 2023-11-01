@@ -21,6 +21,12 @@ export interface ChineseDictionarySearchResults {
 
 export type WordIndex = Map<string, Array<number>>
 
+export enum SegmentType {
+    Ignored = 0,
+    Known = 1,
+    Unknown = 2,
+}
+
 export function searchWordInChineseDictionary(word: string, wordIndex: WordIndex, dictionary: ChineseDictionary): ChineseDictionarySearchResults {
     let results: ChineseDictionarySearchResults = { data: [], maxMatchLen: 0 }
 
@@ -138,4 +144,24 @@ export function getChineseCharacters(text: string): string {
         }
     }
     return chineseChars
+}
+
+export function categorizeSegments(segmentList: string[], knownWordsIndex: WordIndex, knownWordsList: Array<string>): SegmentType[] {
+    const segmentTypes: SegmentType[] = []
+    segmentList.forEach((segment) => {
+        const chineseChars = getChineseCharacters(segment)
+        if (chineseChars.length == 0) {
+            // The segment is not a Chinese word
+            segmentTypes.push(SegmentType.Ignored)
+        } else {
+            // Check if the segment is a known word
+            // First check in the hashmap because it's faster
+            if (knownWordsIndex.has(chineseChars) || knownWordsList.includes(chineseChars)) {
+                segmentTypes.push(SegmentType.Known)
+            } else {
+                segmentTypes.push(SegmentType.Unknown)
+            }
+        }
+    })
+    return segmentTypes
 }

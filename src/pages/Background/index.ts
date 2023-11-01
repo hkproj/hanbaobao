@@ -1,6 +1,6 @@
 import { ResourceLoadStatus } from "../../shared/loading";
-import { DUMMY_CONTENT, GenericRequest, GetSelectedTextRequest, GetSelectedTextResponse, RequestType, SearchTermRequest, SearchTermResponse, SegmentTextRequest, SegmentTextResponse, UpdateConfigurationResponse, UpdateKnownWordsResponse } from "../../shared/messages";
-import { ChineseDictionary, ChineseDictionaryEntry, HSKVocabulary, HSKVocabularyEntry, WordIndex, getHSKWordsWithSameCharacter, searchWordInChineseDictionary, getKnownWordsWithSameCharacter } from "../../shared/chineseUtils";
+import { CategorizeSegmentsRequest, CategorizeSegmentsResponse, DUMMY_CONTENT, GenericRequest, GetSelectedTextRequest, GetSelectedTextResponse, RequestType, SearchTermRequest, SearchTermResponse, SegmentTextRequest, SegmentTextResponse, UpdateConfigurationResponse, UpdateKnownWordsResponse } from "../../shared/messages";
+import { ChineseDictionary, ChineseDictionaryEntry, HSKVocabulary, HSKVocabularyEntry, WordIndex, getHSKWordsWithSameCharacter, searchWordInChineseDictionary, getKnownWordsWithSameCharacter, SegmentType, categorizeSegments } from "../../shared/chineseUtils";
 import { ConfigurationKey, readConfiguration, writeConfiguration } from "../../shared/configuration";
 import { JiebaData, JiebaDictionary, JiebaDictionaryEntry, cut, initialize } from "../../shared/jieba";
 
@@ -221,6 +221,28 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
                 segmentTextResponse.segments = seg
             }
             sendResponse(segmentTextResponse)
+            break;
+        case RequestType.CategorizeSegments:
+            const categorizeSegmentsRequest = req as CategorizeSegmentsRequest
+            const categorizeSegmentsResponse: CategorizeSegmentsResponse = {
+                dummy: DUMMY_CONTENT,
+                segmentTypes: []
+            }
+
+            const segmentsList = categorizeSegmentsRequest.segments
+
+            if (knownWordsLoadStatus === ResourceLoadStatus.Loaded) {
+                const segmentTypes = categorizeSegments(segmentsList, knownWordsIndex!, knownWordsList!)
+                categorizeSegmentsResponse.segmentTypes = segmentTypes
+            } else {
+                const segmentTypes = []
+                for (let i = 0; i < segmentsList.length; ++i) {
+                    segmentTypes.push(SegmentType.Ignored)
+                }
+                categorizeSegmentsResponse.segmentTypes = segmentTypes
+            }
+
+            sendResponse(categorizeSegmentsResponse)
             break;
         default:
             break

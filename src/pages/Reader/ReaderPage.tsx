@@ -1,12 +1,13 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Col, Container, Row } from 'react-bootstrap'
-import { DUMMY_CONTENT, GetSelectedTextRequest, GetSelectedTextResponse, RequestType, SearchTermRequest, SearchTermResponse, SegmentTextRequest, SegmentTextResponse } from '../../shared/messages'
+import { CategorizeSegmentsRequest, CategorizeSegmentsResponse, DUMMY_CONTENT, GetSelectedTextRequest, GetSelectedTextResponse, RequestType, SearchTermRequest, SearchTermResponse, SegmentTextRequest, SegmentTextResponse } from '../../shared/messages'
 import { ResourceLoadStatus } from '../../shared/loading';
 
 import 'bootstrap/dist/css/bootstrap.min.css'
 import './ReaderPage.scss';
 import { ResultsViewer } from './ResultsViewer';
 import { getWordUnderCursor } from '../Content/textSelect';
+import { SegmentType } from '../../shared/chineseUtils';
 
 const EMPTY_RESULTS: SearchTermResponse = {
   dictionary: {
@@ -25,6 +26,7 @@ const Reader = () => {
   const [text, setText] = useState('');
   const [segmentsLoadingStatus, setSegmentsLoadingStatus] = useState(ResourceLoadStatus.Unloaded);
   const [textSegments, setTextSegments] = useState<string[]>([]);
+  const [textSegmentTypes, setTextSegmentTypes] = useState<SegmentType[]>([]);
 
   const [selectedSegmentNode, setSelectedSegmentNode] = useState<Node | null>(null);
   const [selectedSegmentOffset, setSelectedSegmentOffset] = useState<number | null>(null);
@@ -33,6 +35,7 @@ const Reader = () => {
   const [searchTermResponse, setSearchTermResponse] = useState<SearchTermResponse>(EMPTY_RESULTS);
 
   useEffect(() => {
+    // Get the selected text
     const request: GetSelectedTextRequest = { type: RequestType.GetSelectedText, clean: true }
     chrome.runtime.sendMessage(request, (response) => {
       const getTextResp: GetSelectedTextResponse = response as GetSelectedTextResponse
@@ -52,6 +55,15 @@ const Reader = () => {
     })
 
   }, [text])
+
+  useEffect(() => {
+    // Categorize the segments when the segments change
+    const request: CategorizeSegmentsRequest = { type: RequestType.CategorizeSegments, segments: textSegments }
+    chrome.runtime.sendMessage(request, (response) => {
+      const categorizeSegResp: CategorizeSegmentsResponse = response as CategorizeSegmentsResponse
+      setTextSegmentTypes(categorizeSegResp.segmentTypes)
+    })
+  }, [textSegments])
 
   function onKeyUpDocument(event: KeyboardEvent) {
     if (event.code == 'KeyQ') {
@@ -166,7 +178,23 @@ const Reader = () => {
     } else {
       return <div className="segment-list" onMouseMove={onMouseMoveSegmentList}>
         {textSegments.map((segment, index) => {
-          return <span data-segment-index={index} className="segment" key={index}>{segment}</span>
+          let segmentType = SegmentType.Ignored
+
+          // Only when the segment types are loaded
+          if (textSegmentTypes.length == textSegments.length) {
+            segmentType = textSegmentTypes[index]
+          }
+
+          let segmentClass = "segment "
+          if (segmentType == SegmentType.Ignored) {
+            segmentClass += "segment-ignored"
+          } else if (segmentType == SegmentType.Unknown) {
+            segmentClass += "segment-unknown"
+          } else if (segmentType == SegmentType.Known) {
+            segmentClass += "segment-known"
+          }
+
+          return <span data-segment-index={index} className={segmentClass} key={index}>{segment}</span>
         })}
       </div>
     }

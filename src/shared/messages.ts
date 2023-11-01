@@ -1,4 +1,4 @@
-import { ChineseDictionaryEntry, ChineseDictionarySearchResults, HSKVocabularyEntry } from "./chineseUtils"
+import { ChineseDictionaryEntry, ChineseDictionarySearchResults, HSKVocabularyEntry, SegmentType } from "./chineseUtils"
 import { ResourceLoadStatus } from "./loading"
 
 export const DUMMY_CONTENT = 0;
@@ -9,6 +9,7 @@ export enum RequestType {
     UpdateConfiguration = "update-configuration",
     GetSelectedText = "get-selected-text",
     SegmentText = "segment-text",
+    CategorizeSegments = "categorize-segments"
 }
 
 export interface GenericRequest {
@@ -58,4 +59,12 @@ export interface SegmentTextRequest extends GenericRequest {
 
 export interface SegmentTextResponse extends GenericResponse {
     segments: Array<string>
+}
+
+export interface CategorizeSegmentsRequest extends GenericRequest {
+    segments: Array<string>
+}
+
+export interface CategorizeSegmentsResponse extends GenericResponse {
+    segmentTypes: Array<SegmentType>
 }
