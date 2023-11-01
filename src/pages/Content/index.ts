@@ -1,9 +1,8 @@
 import { RequestType, SearchTermRequest, SearchTermResponse } from "../../shared/messages"
 import { getWordUnderCursor } from "./textSelect"
 import { Root, createRoot } from 'react-dom/client';
-import { ResultsViewer } from "./ResultsViewer";
+import { PopupResultsViewer } from "./PopupResultsViewer";
 import { ResourceLoadStatus } from "../../shared/loading";
-import 'bootstrap/dist/css/bootstrap.min.css'
 
 let appContainer: HTMLDivElement | null = null;
 let appRoot: Root | null = null;
@@ -21,25 +20,25 @@ function displayOrUpdateResults(response: SearchTermResponse) {
     if (appContainer != null && appContainer.className == "hanbaobao-window-dynamic") {
         const xOffset = 20
         const yOffset = 20
-    
+
         let windowPositionX = mousePosition.pageX + xOffset
         let windowPositionY = mousePosition.pageY + yOffset
-    
+
         appContainer?.style.setProperty('top', `${windowPositionY}px`)
         appContainer?.style.setProperty('left', `${windowPositionX}px`)
-    
+
         // if (response.serviceEnabled == false) {
         //     console.log("Service is disabled")
         // }
-    
+
         if (response.status != ResourceLoadStatus.Loaded || (response.dictionary.data.length == 0 && response.hsk.length == 0 && response.knownWords.length == 0) || response.serviceEnabled == false) {
             appContainer!.style.display = 'none';
         } else {
             appContainer!.style.display = 'block';
         }
-    }    
+    }
 
-    appRoot!.render(ResultsViewer({ response }))
+    appRoot!.render(PopupResultsViewer({ response }))
 }
 
 function createContainers() {

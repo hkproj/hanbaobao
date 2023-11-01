@@ -8,7 +8,7 @@ const MAX_DICTIONARY_ENTRIES = 5;
 const MAX_HSK_WORDS = 5;
 const MAX_KNOWN_WORDS = 5;
 
-export function ResultsViewer(props: { response: SearchTermResponse }) {
+export function PopupResultsViewer(props: { response: SearchTermResponse }) {
 
     function getDictionaryResults(response: SearchTermResponse) {
         if (response.dictionary.data.length == 0) {
@@ -84,7 +84,6 @@ export function ResultsViewer(props: { response: SearchTermResponse }) {
                                 </div>
                             })
                         }
-
                     </Card.Text>
                 </Card.Body>
             </Card>
