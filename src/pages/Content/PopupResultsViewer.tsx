@@ -8,6 +8,25 @@ const MAX_DICTIONARY_ENTRIES = 5;
 const MAX_HSK_WORDS = 5;
 const MAX_KNOWN_WORDS = 5;
 
+export function getTonifiedPinyin(pinyin: string) {
+    const syllabes = pinyin.split(/[\s·]+/);
+    let tonifiedPinyin = [];
+
+    for (var syllabeIndex in syllabes) {
+        var syllabe = syllabes[syllabeIndex];
+        const m = parseTones(syllabe);
+        if (m != null) {
+            const t = tonifyPinyin(m[2], m[4]);
+            const toneNumber = m[4];
+            tonifiedPinyin.push(<span key={syllabeIndex} className={`hanbaobao-pinyin-tone-${toneNumber}`}>{m[1] + t[1] + m[3]}</span>)
+        } else {
+            tonifiedPinyin.push(<span key={syllabeIndex} className={`hanbaobao-pinyin-tone-5`}>{syllabe}</span>)
+        }
+    }
+
+    return tonifiedPinyin
+}
+
 export function PopupResultsViewer(props: { response: SearchTermResponse }) {
 
     function getDictionaryResults(response: SearchTermResponse) {
@@ -20,26 +39,10 @@ export function PopupResultsViewer(props: { response: SearchTermResponse }) {
                         <Card.Title className='hanbaobao-section-title'>Dictionary</Card.Title>
                         <Card.Text>
                             {response.dictionary.data.slice(0, MAX_DICTIONARY_ENTRIES).map((entry, index) => {
-
-                                const syllabes = entry.pinyin.split(/[\s·]+/);
-                                let tonifiedPinyin = [];
-
-                                for (var syllabeIndex in syllabes) {
-                                    var syllabe = syllabes[syllabeIndex];
-                                    const m = parseTones(syllabe);
-                                    if (m != null) {
-                                        const t = tonifyPinyin(m[2], m[4]);
-                                        const toneNumber = m[4];
-                                        tonifiedPinyin.push(<span key={syllabeIndex} className={`hanbaobao-pinyin-tone-${toneNumber}`}>{m[1] + t[1] + m[3]}</span>)
-                                    } else {
-                                        tonifiedPinyin.push(<span key={syllabeIndex} className={`hanbaobao-pinyin-tone-5`}>{syllabe}</span>)
-                                    }
-                                }
-
                                 return <div className='hanbaobao-dictionary-entry' key={index}>
                                     <div className='hanbaobao-dictionary-entry-chinese'>
                                         <span className='hanbaobao-dictionary-entry-chinese-simplified'>{entry.simplified}</span>
-                                        <span className='hanbaobao-dictionary-entry-chinese-pinyin'>{tonifiedPinyin}</span>
+                                        <span className='hanbaobao-dictionary-entry-chinese-pinyin'>{getTonifiedPinyin(entry.pinyin)}</span>
                                     </div>
                                     <div className='hanbaobao-dictionary-entry-definitions'>{entry.definitions.join(' | ')}</div>
                                 </div>
