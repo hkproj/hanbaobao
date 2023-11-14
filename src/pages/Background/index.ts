@@ -45,7 +45,9 @@ function createContextMenus() {
                 url: selectedTabUrl,
                 text: info.selectionText!
             }
-            chrome.runtime.sendMessage(addNewUserTextRequest, (response: messages.AddNewUserTextResponse) => {
+
+            const responsePromise = handleAddNewUserTextRequest(addNewUserTextRequest)
+            responsePromise.then((response) => {
                 if (response.id != null) {
                     // Open a new tab with the reader service
                     chrome.tabs.create({
@@ -64,7 +66,7 @@ async function loadJiebaDictionary() {
 
     let jiebaDictionaryRaw = await jiebaDictionaryFile.json()
 
-    let jiebaDictionary: jieba.JiebaDictionary = new Array<jieba.JiebaDictionaryEntry>() 
+    let jiebaDictionary: jieba.JiebaDictionary = new Array<jieba.JiebaDictionaryEntry>()
     console.log(`Jieba dictionary entries: ${jiebaDictionaryRaw.length}`)
     for (let i = 0; i < jiebaDictionaryRaw.length; ++i) {
         let entry = jiebaDictionaryRaw[i]
@@ -176,6 +178,38 @@ async function loadConfiguration() {
     updateActionBadgeText()
 }
 
+async function handleAddNewUserTextRequest(addNewUserTextRequest: messages.AddNewUserTextRequest) {
+    const addNewUserTextResponse: messages.AddNewUserTextResponse = { dummy: messages.DUMMY_CONTENT, id: null }
+
+    if (userTextsLoadStatus != ResourceLoadStatus.Loaded || jiebaLoadStatus != ResourceLoadStatus.Loaded || knownWordsLoadStatus != ResourceLoadStatus.Loaded) {
+        return addNewUserTextResponse
+    }
+
+    const segments = jieba.cut(jiebaData!, addNewUserTextRequest.text)
+    const segmentTypes = chinese.categorizeSegments(segments, knownWordsIndex!, knownWordsList!)
+    const userTextToAdd: UserText = {
+        id: "", // It will be assigned a new unique id
+        name: "New user text",
+        url: addNewUserTextRequest.url,
+        segments: segments,
+        segmentTypes: segmentTypes,
+        created: new Date(),
+    }
+
+    const [newUserText, newUserTextsIndex] = await addUserText(userTextsIndex!, userTextToAdd)
+    // Verify that the id has been assigned, otherwise throw an error
+    if (newUserText.id == null || newUserText.id == "") {
+        throw new Error("No id was assigned to a newly created user text")
+    }
+
+    // Save the new user text and the list
+    addNewUserTextResponse.id = newUserText.id
+    userTextsIndex = newUserTextsIndex
+    saveUserTexts()
+
+    return addNewUserTextResponse
+}
+
 chrome.action.onClicked.addListener(async (tab) => {
     await writeConfiguration(ConfigurationKey.SEARCH_SERVICE_ENABLED, !searchServiceEnabled)
     searchServiceEnabled = await readConfiguration(ConfigurationKey.SEARCH_SERVICE_ENABLED, false)
@@ -234,37 +268,7 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
             sendResponse(updateConfigurationResponse)
             break
         case messages.RequestType.AddNewUserText:
-            const addNewUserTextRequest = req as messages.AddNewUserTextRequest
-            const addNewUserTextResponse: messages.AddNewUserTextResponse = { dummy: messages.DUMMY_CONTENT, id: null }
-
-            if (userTextsLoadStatus != ResourceLoadStatus.Loaded || jiebaLoadStatus != ResourceLoadStatus.Loaded || knownWordsLoadStatus != ResourceLoadStatus.Loaded) {
-                sendResponse(addNewUserTextResponse)
-                return
-            }
-
-            const segments = jieba.cut(jiebaData!, addNewUserTextRequest.text)
-            const segmentTypes = chinese.categorizeSegments(segments, knownWordsIndex!, knownWordsList!)
-            const userTextToAdd: UserText = {
-                id: "", // It will be assigned a new unique id
-                name: "New user text",
-                url: addNewUserTextRequest.url,
-                segments: segments,
-                segmentTypes: segmentTypes,
-                created: new Date(),
-            }
-
-            const [newUserText, newUserTextsIndex] = await addUserText(userTextsIndex!, userTextToAdd)
-            // Verify that the id has been assigned, otherwise throw an error
-            if (newUserText.id == null || newUserText.id == "") {
-                throw new Error("No id was assigned to a newly created user text")
-            }
-
-            // Save the new user text and the list
-            addNewUserTextResponse.id = newUserText.id
-            userTextsIndex = newUserTextsIndex
-            saveUserTexts()
-
-            sendResponse(addNewUserTextResponse)
+            sendResponse(handleAddNewUserTextRequest(req as messages.AddNewUserTextRequest))
             break;
         case messages.RequestType.GetUserText:
             const getUserTextRequest = req as messages.GetUserTextRequest

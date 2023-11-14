@@ -39,14 +39,18 @@ const Reader = () => {
 
   useEffect(() => {
     // Get the user text id from the url
-    const userTextId = searchParams.get('id')
-    if (userTextId == null) {
+    const id = searchParams.get('id')
+    if (id == null) {
       return
     }
-    setUserTextId(userTextId)
+    setUserTextId(id)
   }, [])
 
   useEffect(() => {
+    if (userTextId == null) {
+      return
+    }
+    console.log(`Loading user text ${userTextId}`)
     // Retrieve the user text from its id
     const request: GetUserTextRequest = { type: RequestType.GetUserText, id: userTextId! }
     chrome.runtime.sendMessage(request, (response) => {
@@ -186,7 +190,7 @@ const Reader = () => {
   function getTextView() {
     if (userTextId == null) {
       return <p>No text selected.</p>;
-    } else if (userTextLoadingStatus === ResourceLoadStatus.Loading) {
+    } else if (userTextLoadingStatus != ResourceLoadStatus.Loaded) {
       return <p>Loading...</p>;
     } else {
       return <div className="segment-list" onMouseMove={onMouseMoveSegmentList}>
