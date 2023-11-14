@@ -4,7 +4,8 @@ export enum ConfigurationKey {
     KNOWN_WORDS = "known-words",
     KNOWN_WORDS_ENABLED = "known-words-enabled",
     KNOWN_WORDS_INDEX = "known-words-index",
-    CONFIGURATION_SCHEMA_VERSION = "configuration-schema-version"
+    CONFIGURATION_SCHEMA_VERSION = "configuration-schema-version",
+    USER_TEXTS = "user-texts",
 }
 
 export function readConfiguration(key: ConfigurationKey, defaultValue: any = null): Promise<any> {

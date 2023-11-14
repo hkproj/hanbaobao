@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
+
 import { Col, Container, Row } from 'react-bootstrap'
-import { CategorizeSegmentsRequest, CategorizeSegmentsResponse, DUMMY_CONTENT, GetSelectedTextRequest, GetSelectedTextResponse, RequestType, SearchTermRequest, SearchTermResponse, SegmentTextRequest, SegmentTextResponse } from '../../shared/messages'
+import { DUMMY_CONTENT, GetUserTextRequest, GetUserTextResponse, RequestType, SearchTermRequest, SearchTermResponse, UpdateUserTextRequest, } from '../../shared/messages'
 import { ResourceLoadStatus } from '../../shared/loading';
 
 import 'bootstrap/dist/css/bootstrap.min.css'
@@ -8,6 +9,7 @@ import './ReaderPage.scss';
 import { ResultsViewer } from './ResultsViewer';
 import { getWordUnderCursor } from '../Content/textSelect';
 import { SegmentType } from '../../shared/chineseUtils';
+import { UserText } from '../../shared/userTexts';
 
 const EMPTY_RESULTS: SearchTermResponse = {
   dictionary: {
@@ -23,10 +25,11 @@ const EMPTY_RESULTS: SearchTermResponse = {
 
 const Reader = () => {
 
-  const [text, setText] = useState('');
-  const [segmentsLoadingStatus, setSegmentsLoadingStatus] = useState(ResourceLoadStatus.Unloaded);
-  const [textSegments, setTextSegments] = useState<string[]>([]);
-  const [textSegmentTypes, setTextSegmentTypes] = useState<SegmentType[]>([]);
+  const searchParams = new URLSearchParams(window.location.search);
+
+  const [userTextId, setUserTextId] = useState<string | null>(null);
+  const [userTextLoadingStatus, setUserTextLoadingStatus] = useState(ResourceLoadStatus.Unloaded);
+  const [userText, setUserText] = useState<UserText | null>(null);
 
   const [selectedSegmentNode, setSelectedSegmentNode] = useState<Node | null>(null);
   const [selectedSegmentOffset, setSelectedSegmentOffset] = useState<number | null>(null);
@@ -35,95 +38,105 @@ const Reader = () => {
   const [searchTermResponse, setSearchTermResponse] = useState<SearchTermResponse>(EMPTY_RESULTS);
 
   useEffect(() => {
-    // Get the selected text
-    const request: GetSelectedTextRequest = { type: RequestType.GetSelectedText, clean: true }
-    chrome.runtime.sendMessage(request, (response) => {
-      const getTextResp: GetSelectedTextResponse = response as GetSelectedTextResponse
-      setSegmentsLoadingStatus(ResourceLoadStatus.Unloaded)
-      setText(getTextResp.selectedText)
-    })
+    // Get the user text id from the url
+    const userTextId = searchParams.get('id')
+    if (userTextId == null) {
+      return
+    }
+    setUserTextId(userTextId)
   }, [])
 
   useEffect(() => {
-    // Cut the text
-    setSegmentsLoadingStatus(ResourceLoadStatus.Loading)
-    const request: SegmentTextRequest = { type: RequestType.SegmentText, text: text }
+    // Retrieve the user text from its id
+    const request: GetUserTextRequest = { type: RequestType.GetUserText, id: userTextId! }
     chrome.runtime.sendMessage(request, (response) => {
-      const segmentTextResp: SegmentTextResponse = response as SegmentTextResponse
-      setSegmentsLoadingStatus(ResourceLoadStatus.Loaded)
-      setTextSegments(segmentTextResp.segments)
+      const getUserTextResponse: GetUserTextResponse = response as GetUserTextResponse
+      if (getUserTextResponse.userText != null) {
+        setUserText(getUserTextResponse.userText)
+        setUserTextLoadingStatus(ResourceLoadStatus.Loaded);
+      }
     })
+  }, [userTextId])
 
-  }, [text])
-
-  useEffect(() => {
-    // Categorize the segments when the segments change
-    const request: CategorizeSegmentsRequest = { type: RequestType.CategorizeSegments, segments: textSegments }
+  function saveUserText() {
+    // Save the user text
+    const request: UpdateUserTextRequest = { type: RequestType.UpdateUserText, userText: userText! }
     chrome.runtime.sendMessage(request, (response) => {
-      const categorizeSegResp: CategorizeSegmentsResponse = response as CategorizeSegmentsResponse
-      setTextSegmentTypes(categorizeSegResp.segmentTypes)
+      // Do nothing with the response
     })
-  }, [textSegments])
+  }
 
   function onKeyUpDocument(event: KeyboardEvent) {
     if (event.code == 'KeyQ') {
       // Split the current segment into two segments based on the cursor position
       if (selectedSegmentNode != null && selectedSegmentOffset != null) {
-        const segmentText = textSegments[selectedSegmentIndex!]
+        const segmentText = userText!.segments[selectedSegmentIndex!]
 
+        // Do not split if only composed of one character
         if (segmentText.length <= 1) {
-          // Nothing to split
           return
         }
 
+        // Do not split if the cursor is at the beginning of the segment or at the end
         const firstSegmentText = segmentText.substring(0, selectedSegmentOffset)
-        if (firstSegmentText.length == 0) {
-          // Nothing to split
+        if (firstSegmentText.length == 0 || firstSegmentText.length == segmentText.length) {
           return
         }
 
+        // Split and save
         const secondSegmentText = segmentText.substring(selectedSegmentOffset)
-
-        const newSegments = [...textSegments]
+        const newSegments = [...userText!.segments]
         newSegments.splice(selectedSegmentIndex!, 1, firstSegmentText, secondSegmentText)
-        setTextSegments(newSegments)
+        setUserText({ ...userText!, segments: newSegments })
+        saveUserText()
       }
     } else if (event.code == 'KeyW') {
       // Join the selected segments together
       const selection = window.getSelection()
+
       if (selection == null) {
+        // No selection
         return
       }
+
       const range = selection.getRangeAt(0)
       const startNode = range.startContainer
       const endNode = range.endContainer
+
       if (startNode == null || endNode == null) {
+        // Invalid selection
         return
       }
 
       const startSegmentIndex = parseInt(startNode.parentElement?.getAttribute('data-segment-index')!)
       const endSegmentIndex = parseInt(endNode.parentElement?.getAttribute('data-segment-index')!)
       if (startSegmentIndex == null || endSegmentIndex == null || Number.isNaN(startSegmentIndex) || Number.isNaN(endSegmentIndex) || startSegmentIndex == endSegmentIndex) {
+        // Invalid selection
         return
       }
 
-      // Only allow to join up to three segments
       if (endSegmentIndex - startSegmentIndex > 2) {
+        // Only allow to join up to three segments
         return
       }
 
-      const newSegments = [...textSegments]
+
+      const newSegments = [...userText!.segments]
       let joinedSegmentText = ""
       for (let i = startSegmentIndex; i <= endSegmentIndex; i++) {
+        // Create the new segment text
         joinedSegmentText += newSegments[i]
       }
 
       if (joinedSegmentText.length == 0) {
+        // Invalid selection
         return
       }
 
+      // Delete the old segments, insert the joined one and save
       newSegments.splice(startSegmentIndex, endSegmentIndex - startSegmentIndex + 1, joinedSegmentText)
-      setTextSegments(newSegments)
+      setUserText({ ...userText!, segments: newSegments })
+      saveUserText()
     }
   }
 
@@ -159,7 +172,7 @@ const Reader = () => {
           setSearchTermResponse(response)
         }
       })
-    }
+  }
 
   useEffect(() => {
     document.addEventListener("keyup", onKeyUpDocument);
@@ -171,19 +184,14 @@ const Reader = () => {
   }, [onKeyUpDocument, onMouseMoveDocument]);
 
   function getTextView() {
-    if (text == null) {
+    if (userTextId == null) {
       return <p>No text selected.</p>;
-    } else if (segmentsLoadingStatus === ResourceLoadStatus.Loading) {
+    } else if (userTextLoadingStatus === ResourceLoadStatus.Loading) {
       return <p>Loading...</p>;
     } else {
       return <div className="segment-list" onMouseMove={onMouseMoveSegmentList}>
-        {textSegments.map((segment, index) => {
-          let segmentType = SegmentType.Ignored
-
-          // Only when the segment types are loaded
-          if (textSegmentTypes.length == textSegments.length) {
-            segmentType = textSegmentTypes[index]
-          }
+        {userText!.segments.map((segment, index) => {
+          let segmentType = userText!.segmentTypes[index]
 
           let segmentClass = "segment "
           if (segmentType == SegmentType.Ignored) {

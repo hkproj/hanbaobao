@@ -1,5 +1,6 @@
 import { ChineseDictionaryEntry, ChineseDictionarySearchResults, HSKVocabularyEntry, SegmentType } from "./chineseUtils"
 import { ResourceLoadStatus } from "./loading"
+import { UserText } from "./userTexts";
 
 export const DUMMY_CONTENT = 0;
 
@@ -7,9 +8,9 @@ export enum RequestType {
     SearchTerm = "search-term",
     UpdateKnownWords = "update-known-words",
     UpdateConfiguration = "update-configuration",
-    GetSelectedText = "get-selected-text",
-    SegmentText = "segment-text",
-    CategorizeSegments = "categorize-segments"
+    AddNewUserText = "add-new-user-text",
+    GetUserText = "get-user-text",
+    UpdateUserText = "update-user-text",
 }
 
 export interface GenericRequest {
@@ -36,7 +37,7 @@ export interface UpdateKnownWordsRequest extends GenericRequest {
 }
 
 export interface UpdateKnownWordsResponse extends GenericResponse {
-    
+
 }
 
 export interface UpdateConfigurationRequest extends GenericRequest {
@@ -45,26 +46,26 @@ export interface UpdateConfigurationRequest extends GenericRequest {
 export interface UpdateConfigurationResponse extends GenericResponse {
 }
 
-export interface GetSelectedTextRequest extends GenericRequest {
-    clean: boolean
+export interface AddNewUserTextRequest extends GenericRequest {
+    text: string,
+    url: string,
 }
 
-export interface GetSelectedTextResponse extends GenericResponse {
-    selectedText: string
+export interface AddNewUserTextResponse extends GenericResponse {
+    id: string | null
 }
 
-export interface SegmentTextRequest extends GenericRequest {
-    text: string
+export interface GetUserTextRequest extends GenericRequest {
+    id: string
 }
 
-export interface SegmentTextResponse extends GenericResponse {
-    segments: Array<string>
+export interface GetUserTextResponse extends GenericResponse {
+    userText: UserText | null
 }
 
-export interface CategorizeSegmentsRequest extends GenericRequest {
-    segments: Array<string>
+export interface UpdateUserTextRequest extends GenericRequest {
+    userText: UserText
 }
 
-export interface CategorizeSegmentsResponse extends GenericResponse {
-    segmentTypes: Array<SegmentType>
+export interface UpdateUserTextResponse extends GenericResponse {
 }
