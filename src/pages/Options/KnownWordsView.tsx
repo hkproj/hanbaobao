@@ -10,6 +10,7 @@ import { notifyBackgroundServiceNewConfiguration } from './OptionsPage';
 import './KnownWordsView.css'
 import 'react-data-grid/lib/styles.css';
 import DataGrid from 'react-data-grid';
+import { loadKnownWords, updateKnownWords } from '../../shared/knownWords';
 
 
 const KnownWordsView: React.FC = () => {
@@ -22,11 +23,7 @@ const KnownWordsView: React.FC = () => {
 
     // Read the configuration on load
     useEffect(() => {
-        readConfiguration(ConfigurationKey.KNOWN_WORDS, []).then((value: string[]) => {
-            setKnownWords(value);
-        }).catch((error: Error) => {
-            console.error(error);
-        })
+        loadKnownWords(setKnownWords);
     }, []);
 
     function handleRemoveKnownWord(word: string) {
@@ -34,53 +31,7 @@ const KnownWordsView: React.FC = () => {
             return knownWord !== word;
         });
 
-        updateKnownWords(newKnownWords);
-    }
-
-    function updateKnownWords(newKnownWords: Array<string>) {
-        setKnownWords(newKnownWords);
-        const wordsIndex = createKnownWordIndex(newKnownWords);
-        const w1 = writeConfiguration(ConfigurationKey.KNOWN_WORDS, newKnownWords);
-        const w2 = writeConfiguration(ConfigurationKey.KNOWN_WORDS_INDEX, wordsIndex);
-
-        Promise.all([w1, w2]).then(() => {
-            // Alert background service to update known words
-            const request: UpdateKnownWordsRequest = {
-                type: RequestType.UpdateKnownWords,
-            }
-            chrome.runtime.sendMessage(request)
-        }).catch((error: Error) => {
-            console.error(error);
-        });
-    }
-
-    function createKnownWordIndex(wordsList: Array<string>): Array<{ key: string, indices: Array<number> }> {
-        const index: any = {}
-        for (var i = 0; i < wordsList.length; ++i) {
-            const entry = wordsList[i]
-
-            for (var charIndex = 0; charIndex < entry.length; charIndex++) {
-                const char = entry[charIndex]
-
-                if (!(char in index)) {
-                    index[char] = [];
-                }
-
-                if (!index[char].includes(i)) {
-                    index[char].push(i)
-                }
-            }
-        }
-
-        var indexArray = []
-        for (var key in index) {
-            indexArray.push({
-                key: key,
-                indices: index[key]
-            })
-        }
-
-        return indexArray;
+        updateKnownWords(newKnownWords, setKnownWords);
     }
 
     function handleImportKnownWords(e: React.MouseEvent<HTMLButtonElement, MouseEvent>) {
@@ -109,7 +60,7 @@ const KnownWordsView: React.FC = () => {
         });
 
         setImportWordsText("");
-        updateKnownWords(newKnownWords);
+        updateKnownWords(newKnownWords, setKnownWords);
     }
 
     function exportToFile(knownWords: Array<string>) {
@@ -131,7 +82,7 @@ const KnownWordsView: React.FC = () => {
 
     function handleDeleteAllKnownWords() {
         setShowDeleteAllModal(false);
-        updateKnownWords([]);
+        updateKnownWords([], setKnownWords);
     }
 
     const columns = [
