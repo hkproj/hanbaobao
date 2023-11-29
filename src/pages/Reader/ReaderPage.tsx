@@ -167,8 +167,7 @@ const Reader = () => {
       return
     }
 
-    // console.log(`Word under cursor: ${wordUnderCursor} - Node: ${node}`)
-    const request: SearchTermRequest = { type: RequestType.SearchTerm, searchTerm: wordUnderCursor }
+    const request: SearchTermRequest = { type: RequestType.SearchTerm, searchTerm: wordUnderCursor, ignoreDisabledStatus: true }
 
     chrome.runtime.sendMessage(request)
       .then((response: SearchTermResponse) => {

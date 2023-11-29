@@ -85,7 +85,7 @@ const onMouseMove = function (e: MouseEvent) {
     nodeUnderCursor = node
 
     // console.log(`Word under cursor: ${wordUnderCursor} - Node: ${node}`)
-    const request: SearchTermRequest = { type: RequestType.SearchTerm, searchTerm: wordUnderCursor }
+    const request: SearchTermRequest = { type: RequestType.SearchTerm, searchTerm: wordUnderCursor, ignoreDisabledStatus: false }
 
     chrome.runtime.sendMessage(request)
         .then((response: SearchTermResponse) => {

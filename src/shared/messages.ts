@@ -22,7 +22,8 @@ export interface GenericResponse {
 }
 
 export interface SearchTermRequest extends GenericRequest {
-    searchTerm: string
+    searchTerm: string,
+    ignoreDisabledStatus: boolean
 }
 
 export interface SearchTermResponse extends GenericResponse {

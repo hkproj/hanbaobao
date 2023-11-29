@@ -231,7 +231,7 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
                 serviceEnabled: searchServiceEnabled
             }
 
-            if (dictionaryLoadStatus === ResourceLoadStatus.Unloaded || !searchServiceEnabled) {
+            if (dictionaryLoadStatus === ResourceLoadStatus.Unloaded || (!searchServiceEnabled && !searchTermRequest.ignoreDisabledStatus)) {
                 sendResponse(searchResponse)
                 return
             }
