@@ -2,11 +2,9 @@ import React, { useEffect, useState } from 'react';
 import './OptionsPage.css';
 import Button from 'react-bootstrap/Button';
 import Form from 'react-bootstrap/Form';
-import { ConfigurationKey, readConfiguration, writeConfiguration } from '../../shared/configuration';
 import { getChineseCharacters } from '../../shared/chineseUtils';
 import { Card, Modal, Table } from 'react-bootstrap';
-import { GetAllKnownWordsRequest, RequestType, UpdateConfigurationRequest, UpdateKnownWordsRequest } from '../../shared/messages';
-import { notifyBackgroundServiceNewConfiguration } from './OptionsPage';
+import { GetAllKnownWordsRequest, RequestType, UpdateKnownWordsRequest } from '../../shared/messages';
 import './KnownWordsView.css'
 import 'react-data-grid/lib/styles.css';
 import DataGrid from 'react-data-grid';
