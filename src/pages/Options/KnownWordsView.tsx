@@ -22,10 +22,10 @@ const KnownWordsView: React.FC = () => {
 
     // Read the configuration on load
     useEffect(() => {
-        loadKnownWords(setKnownWords);
+        loadKnownWords();
     }, []);
 
-    function loadKnownWords(setKnownWords: (words: Array<string>) => void) {
+    function loadKnownWords() {
         const request: GetAllKnownWordsRequest = {
             type: RequestType.GetAllKnownWords
         }
@@ -38,7 +38,7 @@ const KnownWordsView: React.FC = () => {
         });
     }
 
-    function updateKnownWords(newKnownWords: Array<string>, setKnownWords: (words: Array<string>) => void) {
+    function updateKnownWords(newKnownWords: Array<string>) {
         // Alert background service to update known words
         const request: UpdateKnownWordsRequest = {
             type: RequestType.UpdateKnownWords,
@@ -54,7 +54,7 @@ const KnownWordsView: React.FC = () => {
             return knownWord !== word;
         });
 
-        updateKnownWords(newKnownWords, setKnownWords);
+        updateKnownWords(newKnownWords);
     }
 
     function handleImportKnownWords(e: React.MouseEvent<HTMLButtonElement, MouseEvent>) {
@@ -83,7 +83,7 @@ const KnownWordsView: React.FC = () => {
         });
 
         setImportWordsText("");
-        updateKnownWords(newKnownWords, setKnownWords);
+        updateKnownWords(newKnownWords);
     }
 
     function exportToFile(knownWords: Array<string>) {
@@ -105,7 +105,7 @@ const KnownWordsView: React.FC = () => {
 
     function handleDeleteAllKnownWords() {
         setShowDeleteAllModal(false);
-        updateKnownWords([], setKnownWords);
+        updateKnownWords([]);
     }
 
     function getKnownWordsGrid() {
