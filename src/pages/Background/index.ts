@@ -78,6 +78,9 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
         case messages.RequestType.SearchTerm:
             sendResponse(handlers.handleSearchTermRequest(appState, req as messages.SearchTermRequest))
             break
+        case messages.RequestType.GetAllKnownWords:
+            sendResponse(handlers.handleGetAllKnownWordsRequest(appState, req as messages.GetAllKnownWordsRequest))
+            break
         case messages.RequestType.UpdateKnownWords:
             sendResponse(await handlers.handleUpdateKnownWordsRequest(appState, req as messages.UpdateKnownWordsRequest))
             break

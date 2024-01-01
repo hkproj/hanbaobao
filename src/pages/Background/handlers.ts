@@ -74,10 +74,18 @@ export function handleSearchTermRequest(appState: AppState, request: messages.Se
 }
 
 export async function handleUpdateKnownWordsRequest(appState: AppState, request: messages.UpdateKnownWordsRequest): Promise<messages.UpdateKnownWordsResponse> {
-    await state.loadKnownWords(appState)
+    await state.saveNewKnownWords(appState, request.newKnownWords)
     const updateKnownWordsResponse: messages.UpdateKnownWordsResponse = { dummy: messages.DUMMY_CONTENT }
     console.log('Known words index updated.')
     return updateKnownWordsResponse
+}
+
+export async function handleGetAllKnownWordsRequest(appState: AppState, request: messages.GetAllKnownWordsRequest): Promise<messages.GetAllKnownWordsResponse> {
+    const getAllKnownWordsResponse: messages.GetAllKnownWordsResponse = { dummy: messages.DUMMY_CONTENT, knownWords: [] }
+    if (appState.knownWordsLoadStatus == ResourceLoadStatus.Loaded) {
+        getAllKnownWordsResponse.knownWords = appState.knownWordsList!
+    }
+    return getAllKnownWordsResponse
 }
 
 export async function handleUpdateConfigurationRequest(appState: AppState, request: messages.UpdateConfigurationRequest): Promise<messages.UpdateConfigurationResponse> {

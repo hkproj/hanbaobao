@@ -11,6 +11,7 @@ export enum RequestType {
     AddNewUserText = "add-new-user-text",
     GetUserText = "get-user-text",
     UpdateUserText = "update-user-text",
+    GetAllKnownWords = "get-all-known-words",
 }
 
 export interface GenericRequest {
@@ -20,6 +21,8 @@ export interface GenericRequest {
 export interface GenericResponse {
     dummy: number // In order to never send an empty response
 }
+
+// Search in the dictionary
 
 export interface SearchTermRequest extends GenericRequest {
     searchTerm: string,
@@ -34,41 +37,20 @@ export interface SearchTermResponse extends GenericResponse {
     serviceEnabled: boolean,
 }
 
+// Known words
+
 export interface UpdateKnownWordsRequest extends GenericRequest {
+    newKnownWords: Array<string>
 }
 
 export interface UpdateKnownWordsResponse extends GenericResponse {
-
 }
 
-export interface UpdateConfigurationRequest extends GenericRequest {
+export interface GetAllKnownWordsRequest extends GenericRequest {
 }
 
-export interface UpdateConfigurationResponse extends GenericResponse {
-}
-
-export interface AddNewUserTextRequest extends GenericRequest {
-    text: string,
-    url: string,
-}
-
-export interface AddNewUserTextResponse extends GenericResponse {
-    id: string | null
-}
-
-export interface GetUserTextRequest extends GenericRequest {
-    id: string
-}
-
-export interface GetUserTextResponse extends GenericResponse {
-    userText: UserText | null
-}
-
-export interface UpdateUserTextRequest extends GenericRequest {
-    userText: UserText
-}
-
-export interface UpdateUserTextResponse extends GenericResponse {
+export interface GetAllKnownWordsResponse extends GenericResponse {
+    knownWords: Array<string>
 }
 
 export interface AddKnownWordRequest extends GenericRequest {
@@ -109,4 +91,38 @@ export interface CleanIgnoredWordsRequest extends GenericRequest {
 }
 
 export interface CleanIgnoredWordsResponse extends GenericResponse {
+}
+
+// Configuration
+
+export interface UpdateConfigurationRequest extends GenericRequest {
+}
+
+export interface UpdateConfigurationResponse extends GenericResponse {
+}
+
+// User texts
+
+export interface AddNewUserTextRequest extends GenericRequest {
+    text: string,
+    url: string,
+}
+
+export interface AddNewUserTextResponse extends GenericResponse {
+    id: string | null
+}
+
+export interface GetUserTextRequest extends GenericRequest {
+    id: string
+}
+
+export interface GetUserTextResponse extends GenericResponse {
+    userText: UserText | null
+}
+
+export interface UpdateUserTextRequest extends GenericRequest {
+    userText: UserText
+}
+
+export interface UpdateUserTextResponse extends GenericResponse {
 }

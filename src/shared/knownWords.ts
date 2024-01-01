@@ -1,31 +1,3 @@
-import { ConfigurationKey, readConfiguration, writeConfiguration } from "./configuration";
-import { RequestType, UpdateKnownWordsRequest } from "./messages";
-
-export function updateKnownWords(newKnownWords: Array<string>, setKnownWords: (words: Array<string>) => void) {
-    setKnownWords(newKnownWords);
-    const wordsIndex = createKnownWordCharacterIndex(newKnownWords);
-    const w1 = writeConfiguration(ConfigurationKey.KNOWN_WORDS, newKnownWords);
-    const w2 = writeConfiguration(ConfigurationKey.KNOWN_WORDS_INDEX, wordsIndex);
-
-    Promise.all([w1, w2]).then(() => {
-        // Alert background service to update known words
-        const request: UpdateKnownWordsRequest = {
-            type: RequestType.UpdateKnownWords,
-        }
-        chrome.runtime.sendMessage(request)
-    }).catch((error: Error) => {
-        console.error(error);
-    });
-}
-
-export function loadKnownWords(setKnownWords: (words: Array<string>) => void) {
-    readConfiguration(ConfigurationKey.KNOWN_WORDS, []).then((value: string[]) => {
-        setKnownWords(value);
-    }).catch((error: Error) => {
-        console.error(error);
-    })
-}
-
 export function createKnownWordCharacterIndex(wordsList: Array<string>): Array<{ key: string, indices: Array<number> }> {
     const index: any = {}
     for (var i = 0; i < wordsList.length; ++i) {

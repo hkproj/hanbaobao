@@ -5,17 +5,18 @@ import Form from 'react-bootstrap/Form';
 import { ConfigurationKey, readConfiguration, writeConfiguration } from '../../shared/configuration';
 import { getChineseCharacters } from '../../shared/chineseUtils';
 import { Card, Modal, Table } from 'react-bootstrap';
-import { RequestType, UpdateConfigurationRequest, UpdateKnownWordsRequest } from '../../shared/messages';
+import { GetAllKnownWordsRequest, RequestType, UpdateConfigurationRequest, UpdateKnownWordsRequest } from '../../shared/messages';
 import { notifyBackgroundServiceNewConfiguration } from './OptionsPage';
 import './KnownWordsView.css'
 import 'react-data-grid/lib/styles.css';
 import DataGrid from 'react-data-grid';
-import { loadKnownWords, updateKnownWords } from '../../shared/knownWords';
-
+import { ResourceLoadStatus } from '../../shared/loading';
 
 const KnownWordsView: React.FC = () => {
 
     const [knownWords, setKnownWords] = useState<Array<string>>([]);
+    const [knownWordsLoadStatus, setKnownWordsLoadStatus] = useState<ResourceLoadStatus>(ResourceLoadStatus.Unloaded);
+
     const [wordsFilter, setWordsFilter] = useState<string>("");
     const [showDeleteAllModal, setShowDeleteAllModal] = useState<boolean>(false);
 
@@ -25,6 +26,30 @@ const KnownWordsView: React.FC = () => {
     useEffect(() => {
         loadKnownWords(setKnownWords);
     }, []);
+
+    function loadKnownWords(setKnownWords: (words: Array<string>) => void) {
+        const request: GetAllKnownWordsRequest = {
+            type: RequestType.GetAllKnownWords
+        }
+
+        chrome.runtime.sendMessage(request, (response) => {
+            if (response) {
+                setKnownWords(response.knownWords);
+                setKnownWordsLoadStatus(ResourceLoadStatus.Loaded);
+            }
+        });
+    }
+
+    function updateKnownWords(newKnownWords: Array<string>, setKnownWords: (words: Array<string>) => void) {
+        // Alert background service to update known words
+        const request: UpdateKnownWordsRequest = {
+            type: RequestType.UpdateKnownWords,
+            newKnownWords: newKnownWords
+        }
+        chrome.runtime.sendMessage(request)
+
+        setKnownWords(newKnownWords);
+    }
 
     function handleRemoveKnownWord(word: string) {
         const newKnownWords = knownWords.filter((knownWord: string) => {
@@ -85,32 +110,42 @@ const KnownWordsView: React.FC = () => {
         updateKnownWords([], setKnownWords);
     }
 
-    const columns = [
-        {
-            key: "id",
-            name: "ID"
-        },
-        {
-            key: "word",
-            name: "Word"
-        },
-        {
-            key: "manage",
-            name: "Manage",
-            renderCell(props: any) {
-                return <Button onClick={() => handleRemoveKnownWord(props.row.word)}>Remove</Button>
-            }
-        }
-    ]
+    function getKnownWordsGrid() {
+        if (knownWordsLoadStatus != ResourceLoadStatus.Loaded) {
+            return <></>;
+        } else {
+            const columns = [
+                {
+                    key: "id",
+                    name: "ID"
+                },
+                {
+                    key: "word",
+                    name: "Word"
+                },
+                {
+                    key: "manage",
+                    name: "Manage",
+                    renderCell(props: any) {
+                        return <Button onClick={() => handleRemoveKnownWord(props.row.word)}>Remove</Button>
+                    }
+                }
+            ]
+        
+            const rows = knownWords.filter((word) => {
+                return wordsFilter.trim().length == 0 || word.includes(wordsFilter);
+            }).map((word: string, index: number) => {
+                return {
+                    id: index + 1,
+                    word: word
+                }
+            })
 
-    const rows = knownWords.filter((word) => {
-        return wordsFilter.trim().length == 0 || word.includes(wordsFilter);
-    }).map((word: string, index: number) => {
-        return {
-            id: index + 1,
-            word: word
+            return <DataGrid rowHeight={55} columns={columns} rows={rows}></DataGrid>
         }
-    })
+    }
+
+    
 
     return <>
         <Card className='options-card'>
@@ -155,7 +190,7 @@ const KnownWordsView: React.FC = () => {
                         <Button onClick={() => exportToFile(knownWords)}>Export to file</Button>
                     </Form.Group>
                     <Form.Group>
-                        <DataGrid rowHeight={55} columns={columns} rows={rows}></DataGrid>
+                        {getKnownWordsGrid()}
                     </Form.Group>
                 </Form>
 

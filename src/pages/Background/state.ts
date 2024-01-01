@@ -3,6 +3,7 @@ import { ResourceLoadStatus } from "../../shared/loading";
 import * as jieba from "../../shared/jieba";
 import { UserText, addUserText } from "../../shared/userTexts";
 import { ConfigurationKey, readConfiguration, writeConfiguration } from "../../shared/configuration";
+import { createKnownWordCharacterIndex } from "../../shared/knownWords";
 
 export interface AppState {
     searchServiceEnabled: boolean
@@ -139,6 +140,16 @@ export async function loadKnownWords(appState: AppState) {
     }
 
     appState.knownWordsLoadStatus = ResourceLoadStatus.Loaded
+}
+
+export async function saveNewKnownWords(appState: AppState, newKnownWords: Array<string>) {
+    // Save the new list
+    const wordsIndex = createKnownWordCharacterIndex(newKnownWords);
+    await  writeConfiguration(ConfigurationKey.KNOWN_WORDS, newKnownWords);
+    await  writeConfiguration(ConfigurationKey.KNOWN_WORDS_INDEX, wordsIndex);
+    
+    // Then reload it
+    await loadKnownWords(appState)
 }
 
 export async function loadConfiguration(appState: AppState) {
