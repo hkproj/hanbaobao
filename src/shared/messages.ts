@@ -12,6 +12,8 @@ export enum RequestType {
     GetUserText = "get-user-text",
     UpdateUserText = "update-user-text",
     GetAllKnownWords = "get-all-known-words",
+    AddKnownWord = "add-known-word",
+    RemoveKnownWord = "remove-known-word",
 }
 
 export interface GenericRequest {

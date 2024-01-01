@@ -84,6 +84,12 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
         case messages.RequestType.UpdateKnownWords:
             sendResponse(await handlers.handleUpdateKnownWordsRequest(appState, req as messages.UpdateKnownWordsRequest))
             break
+        case messages.RequestType.AddKnownWord:
+            sendResponse(await handlers.handleAddKnownWordRequest(appState, req as messages.AddKnownWordRequest))
+            break
+        case messages.RequestType.RemoveKnownWord:
+            sendResponse(await handlers.handleRemoveKnownWordRequest(appState, req as messages.RemoveKnownWordRequest))
+            break
         case messages.RequestType.UpdateConfiguration:
             sendResponse(await handlers.handleUpdateConfigurationRequest(appState, req as messages.UpdateConfigurationRequest))
             break

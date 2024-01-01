@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 
 import { Col, Container, Row } from 'react-bootstrap'
-import { DUMMY_CONTENT, GetUserTextRequest, GetUserTextResponse, RequestType, SearchTermRequest, SearchTermResponse, UpdateUserTextRequest, } from '../../shared/messages'
+import { AddKnownWordRequest, DUMMY_CONTENT, GetUserTextRequest, GetUserTextResponse, RemoveKnownWordRequest, RequestType, SearchTermRequest, SearchTermResponse, UpdateUserTextRequest, } from '../../shared/messages'
 import { ResourceLoadStatus } from '../../shared/loading';
 
 import 'bootstrap/dist/css/bootstrap.min.css'
@@ -70,10 +70,34 @@ const Reader = () => {
     })
   }
 
+  function setAsKnownWord(word: string) {
+    const request: AddKnownWordRequest = { type: RequestType.AddKnownWord, word: word }
+    chrome.runtime.sendMessage(request, (response) => {
+      // Do nothing with the response
+    })
+
+    // Update the segment type
+    const newSegmentTypes = [...userText!.segmentTypes]
+    newSegmentTypes[selectedSegmentIndex!] = SegmentType.Known
+    setUserText({ ...userText!, segmentTypes: newSegmentTypes })
+  }
+
+  function setAsUnknownWord(word: string) {
+    const request: RemoveKnownWordRequest = { type: RequestType.RemoveKnownWord, word: word }
+    chrome.runtime.sendMessage(request, (response) => {
+      // Do nothing with the response
+    })
+
+    // Update the segment type
+    const newSegmentTypes = [...userText!.segmentTypes]
+    newSegmentTypes[selectedSegmentIndex!] = SegmentType.Unknown
+    setUserText({ ...userText!, segmentTypes: newSegmentTypes }) 
+  }
+
   function onKeyUpDocument(event: KeyboardEvent) {
     if (event.code == 'KeyQ') {
       // Split the current segment into two segments based on the cursor position
-      if (selectedSegmentNode != null && selectedSegmentOffset != null) {
+      if (selectedSegmentNode != null && selectedSegmentNode != null && selectedSegmentOffset != null) {
         const segmentText = userText!.segments[selectedSegmentIndex!]
 
         // Do not split if only composed of one character
@@ -141,10 +165,27 @@ const Reader = () => {
       newSegments.splice(startSegmentIndex, endSegmentIndex - startSegmentIndex + 1, joinedSegmentText)
       setUserText({ ...userText!, segments: newSegments })
       saveUserText()
+    } else if (event.code == 'Digit1') {
+      if (selectedSegmentNode != null && selectedSegmentIndex != null) {
+        // Mark the selected segment as ignored
+        const segmentText = userText!.segments[selectedSegmentIndex!]
+        setAsUnknownWord(segmentText)
+      }
+    } else if (event.code == 'Digit2') {
+      if (selectedSegmentNode != null && selectedSegmentIndex != null) {
+        // Mark the selected segment as a known word
+        const segmentText = userText!.segments[selectedSegmentIndex!]
+        setAsKnownWord(segmentText)
+      }
     }
   }
 
   function onMouseMoveSegmentList(event: React.MouseEvent<HTMLDivElement>) {
+    // Always reset the selection
+    setSelectedSegmentNode(null)
+    setSelectedSegmentOffset(null)
+    setSelectedSegmentIndex(null)
+
     const range = document.caretRangeFromPoint(event.clientX, event.clientY)
     if (range == null || range.startContainer == null || range.startOffset == null) {
       return;

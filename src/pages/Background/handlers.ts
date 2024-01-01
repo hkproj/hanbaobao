@@ -88,6 +88,24 @@ export async function handleGetAllKnownWordsRequest(appState: AppState, request:
     return getAllKnownWordsResponse
 }
 
+export async function handleAddKnownWordRequest(appState: AppState, request: messages.AddKnownWordRequest): Promise<messages.AddKnownWordResponse> {
+    const addKnownWordsResponse: messages.AddKnownWordResponse = { dummy: messages.DUMMY_CONTENT }
+    if (appState.knownWordsLoadStatus == ResourceLoadStatus.Loaded && appState.knownWordsIndex?.has(request.word) == false) {
+        const newKnownWords = appState.knownWordsList!.concat([request.word])
+        await state.saveNewKnownWords(appState, newKnownWords)
+    }
+    return addKnownWordsResponse
+}
+
+export async function handleRemoveKnownWordRequest(appState: AppState, request: messages.RemoveKnownWordRequest): Promise<messages.RemoveKnownWordResponse> {
+    const removeKnownWordsResponse: messages.RemoveKnownWordResponse = { dummy: messages.DUMMY_CONTENT }
+    if (appState.knownWordsLoadStatus == ResourceLoadStatus.Loaded && appState.knownWordsIndex?.has(request.word) == true) {
+        const newKnownWords = appState.knownWordsList!.filter((word) => word != request.word)
+        await state.saveNewKnownWords(appState, newKnownWords)
+    }
+    return removeKnownWordsResponse
+}
+
 export async function handleUpdateConfigurationRequest(appState: AppState, request: messages.UpdateConfigurationRequest): Promise<messages.UpdateConfigurationResponse> {
     await state.loadConfiguration(appState)
     const updateConfigurationResponse: messages.UpdateConfigurationResponse = { dummy: messages.DUMMY_CONTENT }
