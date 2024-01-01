@@ -122,7 +122,7 @@ const Reader = () => {
       // Join the selected segments together
       const selection = window.getSelection()
 
-      if (selection == null) {
+      if (selection == null || selection.rangeCount == 0) {
         // No selection
         return
       }
