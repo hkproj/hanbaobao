@@ -14,7 +14,7 @@ export async function handleAddNewUserTextRequest(appState: AppState, addNewUser
     }
 
     const segments = jieba.cut(appState.jiebaData!, addNewUserTextRequest.text)
-    const segmentTypes = chinese.categorizeSegments(segments, appState.knownWordsIndex!, appState.knownWordsList!)
+    const segmentTypes = chinese.categorizeSegments(segments, appState)
     const userTextToAdd: UserText = {
         id: "", // It will be assigned a new unique id
         name: "New user text",
@@ -64,7 +64,7 @@ export function handleSearchTermRequest(appState: AppState, request: messages.Se
 
     let knownWordsResults: string[] = []
     if (appState.knownWordsEnabled) {
-        knownWordsResults = chinese.getKnownWordsWithSameCharacter(character, appState.knownWordsList!, appState.knownWordsIndex!)
+        knownWordsResults = chinese.getKnownWordsWithSameCharacter(character, appState.knownWordsList!, appState.knownWordsCharacterIndex!)
     }
 
     searchResponse.dictionary = dictionaryResults
@@ -76,7 +76,6 @@ export function handleSearchTermRequest(appState: AppState, request: messages.Se
 export async function handleUpdateKnownWordsRequest(appState: AppState, request: messages.UpdateKnownWordsRequest): Promise<messages.UpdateKnownWordsResponse> {
     await state.saveNewKnownWords(appState, request.newKnownWords)
     const updateKnownWordsResponse: messages.UpdateKnownWordsResponse = { dummy: messages.DUMMY_CONTENT }
-    console.log('Known words index updated.')
     return updateKnownWordsResponse
 }
 
@@ -90,7 +89,7 @@ export async function handleGetAllKnownWordsRequest(appState: AppState, request:
 
 export async function handleAddKnownWordRequest(appState: AppState, request: messages.AddKnownWordRequest): Promise<messages.AddKnownWordResponse> {
     const addKnownWordsResponse: messages.AddKnownWordResponse = { dummy: messages.DUMMY_CONTENT }
-    if (appState.knownWordsLoadStatus == ResourceLoadStatus.Loaded && appState.knownWordsIndex?.has(request.word) == false) {
+    if (appState.knownWordsLoadStatus == ResourceLoadStatus.Loaded && appState.knownWordsCharacterIndex?.has(request.word) == false) {
         const newKnownWords = appState.knownWordsList!.concat([request.word])
         await state.saveNewKnownWords(appState, newKnownWords)
     }
@@ -99,7 +98,7 @@ export async function handleAddKnownWordRequest(appState: AppState, request: mes
 
 export async function handleRemoveKnownWordRequest(appState: AppState, request: messages.RemoveKnownWordRequest): Promise<messages.RemoveKnownWordResponse> {
     const removeKnownWordsResponse: messages.RemoveKnownWordResponse = { dummy: messages.DUMMY_CONTENT }
-    if (appState.knownWordsLoadStatus == ResourceLoadStatus.Loaded && appState.knownWordsIndex?.has(request.word) == true) {
+    if (appState.knownWordsLoadStatus == ResourceLoadStatus.Loaded && appState.knownWordsCharacterIndex?.has(request.word) == true) {
         const newKnownWords = appState.knownWordsList!.filter((word) => word != request.word)
         await state.saveNewKnownWords(appState, newKnownWords)
     }
@@ -109,7 +108,6 @@ export async function handleRemoveKnownWordRequest(appState: AppState, request: 
 export async function handleUpdateConfigurationRequest(appState: AppState, request: messages.UpdateConfigurationRequest): Promise<messages.UpdateConfigurationResponse> {
     await state.loadConfiguration(appState)
     const updateConfigurationResponse: messages.UpdateConfigurationResponse = { dummy: messages.DUMMY_CONTENT }
-    console.log('Configuration updated.')
     return updateConfigurationResponse
 }
 

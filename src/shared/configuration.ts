@@ -3,6 +3,7 @@ export enum ConfigurationKey {
     HSK_ENABLED = "hsk-enabled",
     KNOWN_WORDS = "known-words",
     KNOWN_WORDS_ENABLED = "known-words-enabled",
+    KNOWN_WORDS_CHARACTER_INDEX = "known-words-character-index",
     KNOWN_WORDS_INDEX = "known-words-index",
     CONFIGURATION_SCHEMA_VERSION = "configuration-schema-version",
     USER_TEXTS = "user-texts",

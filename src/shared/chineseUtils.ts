@@ -1,3 +1,5 @@
+import { AppState } from "../pages/Background/state"
+
 export interface ChineseDictionaryEntry {
     traditional: string
     simplified: string
@@ -146,7 +148,7 @@ export function getChineseCharacters(text: string): string {
     return chineseChars
 }
 
-export function categorizeSegments(segmentList: string[], knownWordsIndex: WordIndex, knownWordsList: Array<string>): SegmentType[] {
+export function categorizeSegments(segmentList: string[], appState: AppState): SegmentType[] {
     const segmentTypes: SegmentType[] = []
     segmentList.forEach((segment) => {
         const chineseChars = getChineseCharacters(segment)
@@ -155,8 +157,7 @@ export function categorizeSegments(segmentList: string[], knownWordsIndex: WordI
             segmentTypes.push(SegmentType.Ignored)
         } else {
             // Check if the segment is a known word
-            // First check in the hashmap because it's faster
-            if (knownWordsIndex.has(chineseChars) || knownWordsList.includes(chineseChars)) {
+            if (appState.knownWordsIndex!.has(chineseChars)) {
                 segmentTypes.push(SegmentType.Known)
             } else {
                 segmentTypes.push(SegmentType.Unknown)

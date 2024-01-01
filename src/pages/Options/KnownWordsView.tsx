@@ -4,7 +4,7 @@ import Button from 'react-bootstrap/Button';
 import Form from 'react-bootstrap/Form';
 import { getChineseCharacters } from '../../shared/chineseUtils';
 import { Card, Modal, Table } from 'react-bootstrap';
-import { GetAllKnownWordsRequest, RequestType, UpdateKnownWordsRequest } from '../../shared/messages';
+import { GetAllKnownWordsRequest, GetAllKnownWordsResponse, RequestType, UpdateKnownWordsRequest } from '../../shared/messages';
 import './KnownWordsView.css'
 import 'react-data-grid/lib/styles.css';
 import DataGrid from 'react-data-grid';
@@ -30,7 +30,9 @@ const KnownWordsView: React.FC = () => {
             type: RequestType.GetAllKnownWords
         }
 
-        chrome.runtime.sendMessage(request, (response) => {
+        console.log('Sending request to background service ', request);
+
+        chrome.runtime.sendMessage(request, (response: GetAllKnownWordsResponse) => {
             if (response) {
                 setKnownWords(response.knownWords);
                 setKnownWordsLoadStatus(ResourceLoadStatus.Loaded);

@@ -26,3 +26,24 @@ export function createKnownWordCharacterIndex(wordsList: Array<string>): Array<{
 
     return indexArray;
 }
+
+export function createKnownWordIndex(wordsList: Array<string>): Array<{ key: string, index: number }> {
+    const index: any = {}
+    for (var i = 0; i < wordsList.length; ++i) {
+        const word = wordsList[i]
+
+        if (!(word in index)) {
+            index[word] = i;
+        }
+    }
+
+    var indexArray = []
+    for (var key in index) {
+        indexArray.push({
+            key: key,
+            index: index[key]
+        })
+    }
+
+    return indexArray;
+}

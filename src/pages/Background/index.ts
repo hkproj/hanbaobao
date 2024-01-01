@@ -16,6 +16,7 @@ let appState: state.AppState = {
 
     userTextsIndex: null,
 
+    knownWordsCharacterIndex: null,
     knownWordsIndex: null,
     knownWordsList: null,
 
@@ -71,41 +72,38 @@ function updateActionBadgeText() {
     }
 }
 
-chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
+async function handleMessage(request: any): Promise<any> {
     const req = request as messages.GenericRequest
 
     switch (req.type) {
         case messages.RequestType.SearchTerm:
-            sendResponse(handlers.handleSearchTermRequest(appState, req as messages.SearchTermRequest))
-            break
+            return await handlers.handleSearchTermRequest(appState, req as messages.SearchTermRequest)
         case messages.RequestType.GetAllKnownWords:
-            sendResponse(handlers.handleGetAllKnownWordsRequest(appState, req as messages.GetAllKnownWordsRequest))
-            break
+            return await handlers.handleGetAllKnownWordsRequest(appState, req as messages.GetAllKnownWordsRequest)
         case messages.RequestType.UpdateKnownWords:
-            sendResponse(await handlers.handleUpdateKnownWordsRequest(appState, req as messages.UpdateKnownWordsRequest))
-            break
+            return await handlers.handleUpdateKnownWordsRequest(appState, req as messages.UpdateKnownWordsRequest)
         case messages.RequestType.AddKnownWord:
-            sendResponse(await handlers.handleAddKnownWordRequest(appState, req as messages.AddKnownWordRequest))
-            break
+            return await handlers.handleAddKnownWordRequest(appState, req as messages.AddKnownWordRequest)
         case messages.RequestType.RemoveKnownWord:
-            sendResponse(await handlers.handleRemoveKnownWordRequest(appState, req as messages.RemoveKnownWordRequest))
-            break
+            return await handlers.handleRemoveKnownWordRequest(appState, req as messages.RemoveKnownWordRequest)
         case messages.RequestType.UpdateConfiguration:
-            sendResponse(await handlers.handleUpdateConfigurationRequest(appState, req as messages.UpdateConfigurationRequest))
-            break
+            return await handlers.handleUpdateConfigurationRequest(appState, req as messages.UpdateConfigurationRequest)
         case messages.RequestType.AddNewUserText:
-            sendResponse(handlers.handleAddNewUserTextRequest(appState, req as messages.AddNewUserTextRequest))
-            break
+            return await handlers.handleAddNewUserTextRequest(appState, req as messages.AddNewUserTextRequest)
         case messages.RequestType.GetUserText:
-            sendResponse(handlers.handleGetUserTextRequest(appState, req as messages.GetUserTextRequest))
-            break
+            return await handlers.handleGetUserTextRequest(appState, req as messages.GetUserTextRequest)
         case messages.RequestType.UpdateUserText:
-            sendResponse(handlers.handleUpdateUserText(appState, req as messages.UpdateUserTextRequest))
-            break
+            return await handlers.handleUpdateUserText(appState, req as messages.UpdateUserTextRequest)
         default:
-            break
+            console.error(`Unknown request type: ${req.type}`)
+            return { dummy: messages.DUMMY_CONTENT } as messages.GenericResponse
     }
+}
 
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+    handleMessage(request).then((response) => {
+        sendResponse(response)
+    })
     return true
 })
 

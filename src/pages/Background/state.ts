@@ -3,7 +3,7 @@ import { ResourceLoadStatus } from "../../shared/loading";
 import * as jieba from "../../shared/jieba";
 import { UserText, addUserText } from "../../shared/userTexts";
 import { ConfigurationKey, readConfiguration, writeConfiguration } from "../../shared/configuration";
-import { createKnownWordCharacterIndex } from "../../shared/knownWords";
+import { createKnownWordCharacterIndex, createKnownWordIndex } from "../../shared/knownWords";
 
 export interface AppState {
     searchServiceEnabled: boolean
@@ -18,7 +18,8 @@ export interface AppState {
 
     userTextsIndex: Map<string, UserText> | null
 
-    knownWordsIndex: chinese.WordIndex | null
+    knownWordsCharacterIndex: chinese.WordIndex | null
+    knownWordsIndex: Map<string,number> | null
     knownWordsList: Array<string> | null
 
     ignoredWordsList: Array<string> | null
@@ -128,15 +129,23 @@ export async function saveUserTexts(appState: AppState) {
 
 export async function loadKnownWords(appState: AppState) {
 
-    const knownWordsIndexRaw = await readConfiguration(ConfigurationKey.KNOWN_WORDS_INDEX, []) as any
+    const knownWordsCharacterIndexRaw = await readConfiguration(ConfigurationKey.KNOWN_WORDS_CHARACTER_INDEX, []) as any
+    const knownWordsIndex = await readConfiguration(ConfigurationKey.KNOWN_WORDS_INDEX, {}) as any
     appState.knownWordsList = await readConfiguration(ConfigurationKey.KNOWN_WORDS, []) as Array<string>
     console.log(`Known words list entries count: ${appState.knownWordsList.length}`)
 
-    appState.knownWordsIndex = new Map<string, Array<number>>()
-    console.log(`Known words index entries: ${knownWordsIndexRaw.length}`)
-    for (let i = 0; i < knownWordsIndexRaw.length; ++i) {
-        let entry = knownWordsIndexRaw[i]
-        appState.knownWordsIndex.set(entry.key, entry.indices as Array<number>)
+    appState.knownWordsCharacterIndex = new Map<string, Array<number>>()
+    console.log(`Known words (character) index entries: ${knownWordsCharacterIndexRaw.length}`)
+    for (let i = 0; i < knownWordsCharacterIndexRaw.length; ++i) {
+        let entry = knownWordsCharacterIndexRaw[i]
+        appState.knownWordsCharacterIndex.set(entry.key, entry.indices as Array<number>)
+    }
+
+    appState.knownWordsIndex = new Map<string, number>()
+    console.log(`Known words index entries: ${Object.keys(knownWordsIndex).length}`)
+    for (let i = 0; i < knownWordsIndex.length; ++i) {
+        let entry = knownWordsIndex[i]
+        appState.knownWordsIndex.set(entry.key, entry.index as number)
     }
 
     appState.knownWordsLoadStatus = ResourceLoadStatus.Loaded
@@ -144,9 +153,11 @@ export async function loadKnownWords(appState: AppState) {
 
 export async function saveNewKnownWords(appState: AppState, newKnownWords: Array<string>) {
     // Save the new list
-    const wordsIndex = createKnownWordCharacterIndex(newKnownWords);
+    const characterIndex = createKnownWordCharacterIndex(newKnownWords);
+    const wordIndex = createKnownWordIndex(newKnownWords);
     await  writeConfiguration(ConfigurationKey.KNOWN_WORDS, newKnownWords);
-    await  writeConfiguration(ConfigurationKey.KNOWN_WORDS_INDEX, wordsIndex);
+    await  writeConfiguration(ConfigurationKey.KNOWN_WORDS_CHARACTER_INDEX, characterIndex);
+    await  writeConfiguration(ConfigurationKey.KNOWN_WORDS_INDEX, wordIndex);
     
     // Then reload it
     await loadKnownWords(appState)

@@ -50,6 +50,10 @@ const Reader = () => {
     if (userTextId == null) {
       return
     }
+    reloadUserText()
+  }, [userTextId])
+
+  function reloadUserText() {
     console.log(`Loading user text ${userTextId}`)
     // Retrieve the user text from its id
     const request: GetUserTextRequest = { type: RequestType.GetUserText, id: userTextId! }
@@ -60,38 +64,40 @@ const Reader = () => {
         setUserTextLoadingStatus(ResourceLoadStatus.Loaded);
       }
     })
-  }, [userTextId])
-
-  function saveUserText() {
-    // Save the user text
-    const request: UpdateUserTextRequest = { type: RequestType.UpdateUserText, userText: userText! }
-    chrome.runtime.sendMessage(request, (response) => {
-      // Do nothing with the response
-    })
   }
 
-  function setAsKnownWord(word: string) {
+  async function saveUserText(): Promise<void> {
+    // Save the user text
+    const request: UpdateUserTextRequest = { type: RequestType.UpdateUserText, userText: userText! }
+    return await chrome.runtime.sendMessage(request)
+  }
+
+  async function setAsKnownWord(word: string) {
     const request: AddKnownWordRequest = { type: RequestType.AddKnownWord, word: word }
-    chrome.runtime.sendMessage(request, (response) => {
-      // Do nothing with the response
-    })
+    await chrome.runtime.sendMessage(request)
 
     // Update the segment type
     const newSegmentTypes = [...userText!.segmentTypes]
     newSegmentTypes[selectedSegmentIndex!] = SegmentType.Known
     setUserText({ ...userText!, segmentTypes: newSegmentTypes })
+    await saveUserText()
+
+    // Reload the user text to update the known words
+    await reloadUserText()
   }
 
-  function setAsUnknownWord(word: string) {
+  async function setAsUnknownWord(word: string) {
     const request: RemoveKnownWordRequest = { type: RequestType.RemoveKnownWord, word: word }
-    chrome.runtime.sendMessage(request, (response) => {
-      // Do nothing with the response
-    })
+    await chrome.runtime.sendMessage(request)
 
     // Update the segment type
     const newSegmentTypes = [...userText!.segmentTypes]
     newSegmentTypes[selectedSegmentIndex!] = SegmentType.Unknown
     setUserText({ ...userText!, segmentTypes: newSegmentTypes }) 
+    await saveUserText()
+
+    // Reload the user text to update the known words
+    await reloadUserText()
   }
 
   function onKeyUpDocument(event: KeyboardEvent) {
