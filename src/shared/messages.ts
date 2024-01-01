@@ -67,32 +67,6 @@ export interface RemoveKnownWordRequest extends GenericRequest {
 export interface RemoveKnownWordResponse extends GenericResponse {
 }
 
-export interface AddIgnoredWordRequest extends GenericRequest {
-    word: string
-}
-
-export interface AddIgnoredWordResponse extends GenericResponse {
-}
-
-export interface RemoveIgnoredWordRequest extends GenericRequest {
-    word: string
-}
-
-export interface RemoveIgnoredWordResponse extends GenericResponse {
-}
-
-export interface CleanKnownWordsRequest extends GenericRequest {
-}
-
-export interface CleanKnownWordsResponse extends GenericResponse {
-}
-
-export interface CleanIgnoredWordsRequest extends GenericRequest {
-}
-
-export interface CleanIgnoredWordsResponse extends GenericResponse {
-}
-
 // Configuration
 
 export interface UpdateConfigurationRequest extends GenericRequest {
