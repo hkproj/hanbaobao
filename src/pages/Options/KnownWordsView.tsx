@@ -145,8 +145,6 @@ const KnownWordsView: React.FC = () => {
         }
     }
 
-    
-
     return <>
         <Card className='options-card'>
             <Card.Body>
