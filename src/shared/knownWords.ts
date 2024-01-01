@@ -3,7 +3,7 @@ import { RequestType, UpdateKnownWordsRequest } from "./messages";
 
 export function updateKnownWords(newKnownWords: Array<string>, setKnownWords: (words: Array<string>) => void) {
     setKnownWords(newKnownWords);
-    const wordsIndex = createKnownWordIndex(newKnownWords);
+    const wordsIndex = createKnownWordCharacterIndex(newKnownWords);
     const w1 = writeConfiguration(ConfigurationKey.KNOWN_WORDS, newKnownWords);
     const w2 = writeConfiguration(ConfigurationKey.KNOWN_WORDS_INDEX, wordsIndex);
 
@@ -26,7 +26,7 @@ export function loadKnownWords(setKnownWords: (words: Array<string>) => void) {
     })
 }
 
-export function createKnownWordIndex(wordsList: Array<string>): Array<{ key: string, indices: Array<number> }> {
+export function createKnownWordCharacterIndex(wordsList: Array<string>): Array<{ key: string, indices: Array<number> }> {
     const index: any = {}
     for (var i = 0; i < wordsList.length; ++i) {
         const entry = wordsList[i]

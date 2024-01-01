@@ -146,12 +146,8 @@ const KnownWordsView: React.FC = () => {
                                 If you press yes, all known words will be deleted. This action cannot be undone.
                             </Modal.Body>
                             <Modal.Footer>
-                                <Button variant="secondary" onClick={handleCloseDeleteAllModal}>
-                                    No
-                                </Button>
-                                <Button variant="primary" onClick={handleDeleteAllKnownWords}>
-                                    Yes
-                                </Button>
+                                <Button variant="secondary" onClick={handleCloseDeleteAllModal}>No</Button>
+                                <Button variant="primary" onClick={handleDeleteAllKnownWords}>Yes</Button>
                             </Modal.Footer>
                         </Modal>
                     </Form.Group>
@@ -159,7 +155,7 @@ const KnownWordsView: React.FC = () => {
                         <Button onClick={() => exportToFile(knownWords)}>Export to file</Button>
                     </Form.Group>
                     <Form.Group>
-                        <DataGrid columns={columns} rows={rows}></DataGrid>
+                        <DataGrid rowHeight={55} columns={columns} rows={rows}></DataGrid>
                     </Form.Group>
                 </Form>
 

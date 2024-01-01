@@ -70,3 +70,43 @@ export interface UpdateUserTextRequest extends GenericRequest {
 
 export interface UpdateUserTextResponse extends GenericResponse {
 }
+
+export interface AddKnownWordRequest extends GenericRequest {
+    word: string
+}
+
+export interface AddKnownWordResponse extends GenericResponse {
+}
+
+export interface RemoveKnownWordRequest extends GenericRequest {
+    word: string
+}
+
+export interface RemoveKnownWordResponse extends GenericResponse {
+}
+
+export interface AddIgnoredWordRequest extends GenericRequest {
+    word: string
+}
+
+export interface AddIgnoredWordResponse extends GenericResponse {
+}
+
+export interface RemoveIgnoredWordRequest extends GenericRequest {
+    word: string
+}
+
+export interface RemoveIgnoredWordResponse extends GenericResponse {
+}
+
+export interface CleanKnownWordsRequest extends GenericRequest {
+}
+
+export interface CleanKnownWordsResponse extends GenericResponse {
+}
+
+export interface CleanIgnoredWordsRequest extends GenericRequest {
+}
+
+export interface CleanIgnoredWordsResponse extends GenericResponse {
+}
