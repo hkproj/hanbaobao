@@ -50,26 +50,35 @@ const Reader = () => {
     if (userTextId == null) {
       return
     }
-    reloadUserText()
+
+    reloadUserText().catch((error) => {
+      console.error(error)
+    })
   }, [userTextId])
 
-  function reloadUserText() {
+  async function reloadUserText() {
+    setUserTextLoadingStatus(ResourceLoadStatus.Loading);
     console.log(`Loading user text ${userTextId}`)
     // Retrieve the user text from its id
     const request: GetUserTextRequest = { type: RequestType.GetUserText, id: userTextId! }
-    chrome.runtime.sendMessage(request, (response) => {
-      const getUserTextResponse: GetUserTextResponse = response as GetUserTextResponse
-      if (getUserTextResponse.userText != null) {
-        setUserText(getUserTextResponse.userText)
-        setUserTextLoadingStatus(ResourceLoadStatus.Loaded);
-      }
-    })
+    const response = await chrome.runtime.sendMessage(request)
+    const getUserTextResponse: GetUserTextResponse = response as GetUserTextResponse
+    if (getUserTextResponse.userText != null) {
+      setUserText(getUserTextResponse.userText)
+      setUserTextLoadingStatus(ResourceLoadStatus.Loaded);
+    }
   }
 
-  async function saveUserText(): Promise<void> {
+  async function saveUserText(newUserText: UserText): Promise<void> {
     // Save the user text
-    const request: UpdateUserTextRequest = { type: RequestType.UpdateUserText, userText: userText! }
+    const request: UpdateUserTextRequest = { type: RequestType.UpdateUserText, userText: newUserText }
     return await chrome.runtime.sendMessage(request)
+  }
+
+  async function updateSegments(newSegments: string[]) {
+    const newUserText = { ...userText!, segments: newSegments }
+    await saveUserText(newUserText)
+    await reloadUserText()
   }
 
   async function setAsKnownWord(word: string) {
@@ -79,8 +88,8 @@ const Reader = () => {
     // Update the segment type
     const newSegmentTypes = [...userText!.segmentTypes]
     newSegmentTypes[selectedSegmentIndex!] = SegmentType.Known
-    setUserText({ ...userText!, segmentTypes: newSegmentTypes })
-    await saveUserText()
+    const newUserText = { ...userText!, segmentTypes: newSegmentTypes }
+    await saveUserText(newUserText)
 
     // Reload the user text to update the known words
     await reloadUserText()
@@ -93,8 +102,8 @@ const Reader = () => {
     // Update the segment type
     const newSegmentTypes = [...userText!.segmentTypes]
     newSegmentTypes[selectedSegmentIndex!] = SegmentType.Unknown
-    setUserText({ ...userText!, segmentTypes: newSegmentTypes }) 
-    await saveUserText()
+    const newUserText = { ...userText!, segmentTypes: newSegmentTypes }
+    await saveUserText(newUserText)
 
     // Reload the user text to update the known words
     await reloadUserText()
@@ -121,8 +130,7 @@ const Reader = () => {
         const secondSegmentText = segmentText.substring(selectedSegmentOffset)
         const newSegments = [...userText!.segments]
         newSegments.splice(selectedSegmentIndex!, 1, firstSegmentText, secondSegmentText)
-        setUserText({ ...userText!, segments: newSegments })
-        saveUserText()
+        updateSegments(newSegments).catch((error) => { console.error(error) })
       }
     } else if (event.code == 'KeyW') {
       // Join the selected segments together
@@ -169,19 +177,18 @@ const Reader = () => {
 
       // Delete the old segments, insert the joined one and save
       newSegments.splice(startSegmentIndex, endSegmentIndex - startSegmentIndex + 1, joinedSegmentText)
-      setUserText({ ...userText!, segments: newSegments })
-      saveUserText()
+      updateSegments(newSegments).catch((error) => { console.error(error) })
     } else if (event.code == 'Digit1') {
       if (selectedSegmentNode != null && selectedSegmentIndex != null) {
         // Mark the selected segment as ignored
         const segmentText = userText!.segments[selectedSegmentIndex!]
-        setAsUnknownWord(segmentText)
+        setAsUnknownWord(segmentText).catch((error) => { console.error(error) })
       }
     } else if (event.code == 'Digit2') {
       if (selectedSegmentNode != null && selectedSegmentIndex != null) {
         // Mark the selected segment as a known word
         const segmentText = userText!.segments[selectedSegmentIndex!]
-        setAsKnownWord(segmentText)
+        setAsKnownWord(segmentText).catch((error) => { console.error(error) })
       }
     }
   }

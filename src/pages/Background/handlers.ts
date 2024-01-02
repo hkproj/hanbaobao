@@ -89,7 +89,7 @@ export async function handleGetAllKnownWordsRequest(appState: AppState, request:
 
 export async function handleAddKnownWordRequest(appState: AppState, request: messages.AddKnownWordRequest): Promise<messages.AddKnownWordResponse> {
     const addKnownWordsResponse: messages.AddKnownWordResponse = { dummy: messages.DUMMY_CONTENT }
-    if (appState.knownWordsLoadStatus == ResourceLoadStatus.Loaded && appState.knownWordsCharacterIndex?.has(request.word) == false) {
+    if (appState.knownWordsLoadStatus == ResourceLoadStatus.Loaded && appState.knownWordsIndex?.has(request.word) == false) {
         const newKnownWords = appState.knownWordsList!.concat([request.word])
         await state.saveNewKnownWords(appState, newKnownWords)
     }
@@ -98,7 +98,7 @@ export async function handleAddKnownWordRequest(appState: AppState, request: mes
 
 export async function handleRemoveKnownWordRequest(appState: AppState, request: messages.RemoveKnownWordRequest): Promise<messages.RemoveKnownWordResponse> {
     const removeKnownWordsResponse: messages.RemoveKnownWordResponse = { dummy: messages.DUMMY_CONTENT }
-    if (appState.knownWordsLoadStatus == ResourceLoadStatus.Loaded && appState.knownWordsCharacterIndex?.has(request.word) == true) {
+    if (appState.knownWordsLoadStatus == ResourceLoadStatus.Loaded && appState.knownWordsIndex?.has(request.word) == true) {
         const newKnownWords = appState.knownWordsList!.filter((word) => word != request.word)
         await state.saveNewKnownWords(appState, newKnownWords)
     }
@@ -117,11 +117,13 @@ export function handleGetUserTextRequest(appState: AppState, request: messages.G
 
     if (appState.userTextsLoadStatus != ResourceLoadStatus.Loaded) {
         // Not loaded
+        console.error(`GetUserTextRequest: User texts not loaded`)
         return getUserTextResponse
     }
 
     if (appState.userTextsIndex!.has(getUserTextRequest.id) == false) {
         // Not found
+        console.error(`GetUserTextRequest: User text with id ${getUserTextRequest.id} not found`)
         return getUserTextResponse
     }
 
@@ -136,12 +138,14 @@ export function handleUpdateUserText(appState: AppState, request: messages.Updat
     const updateUserTextResponse: messages.UpdateUserTextResponse = { dummy: messages.DUMMY_CONTENT }
 
     if (appState.userTextsLoadStatus != ResourceLoadStatus.Loaded) {
+        console.error(`UpdateUserTextRequest: User texts not loaded`)
         // Not loaded
         return (updateUserTextResponse)
     }
 
     if (appState.userTextsIndex!.has(updateUserTextRequest.userText.id) == false) {
         // Not found
+        console.error(`UpdateUserTextRequest: User text with id ${updateUserTextRequest.userText.id} not found`)
         return (updateUserTextResponse)
     }
 
