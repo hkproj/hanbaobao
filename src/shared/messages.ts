@@ -14,6 +14,7 @@ export enum RequestType {
     GetAllKnownWords = "get-all-known-words",
     AddKnownWord = "add-known-word",
     RemoveKnownWord = "remove-known-word",
+    GetUserTextsList = "get-user-texts-list",
 }
 
 export interface GenericRequest {
@@ -94,6 +95,13 @@ export interface GetUserTextRequest extends GenericRequest {
 
 export interface GetUserTextResponse extends GenericResponse {
     userText: UserText | null
+}
+
+export interface GetUserTextsListRequest extends GenericRequest {
+}
+
+export interface GetUserTextsListResponse extends GenericResponse {
+    userTexts: Array<UserText>
 }
 
 export interface UpdateUserTextRequest extends GenericRequest {

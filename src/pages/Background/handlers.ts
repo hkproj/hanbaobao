@@ -21,7 +21,7 @@ export async function handleAddNewUserTextRequest(appState: AppState, addNewUser
         url: addNewUserTextRequest.url,
         segments: segments,
         segmentTypes: segmentTypes,
-        created: new Date(),
+        createdOn: new Date().toISOString(),
     }
 
     const [newUserText, newUserTextsIndex] = await addUserText(appState.userTextsIndex!, userTextToAdd)
@@ -133,7 +133,7 @@ export function handleGetUserTextRequest(appState: AppState, request: messages.G
     return getUserTextResponse
 }
 
-export function handleUpdateUserText(appState: AppState, request: messages.UpdateUserTextRequest): messages.UpdateUserTextResponse {
+export function handleUpdateUserTextRequest(appState: AppState, request: messages.UpdateUserTextRequest): messages.UpdateUserTextResponse {
     const updateUserTextRequest = request as messages.UpdateUserTextRequest
     const updateUserTextResponse: messages.UpdateUserTextResponse = { dummy: messages.DUMMY_CONTENT }
 
@@ -153,4 +153,28 @@ export function handleUpdateUserText(appState: AppState, request: messages.Updat
     appState.userTextsIndex!.set(updateUserTextRequest.userText.id, updateUserTextRequest.userText)
     state.saveUserTexts(appState)
     return (updateUserTextResponse)
+}
+
+export function handleGetUserTextsListRequest(appState: AppState, request: messages.GetUserTextsListRequest): messages.GetUserTextsListResponse {
+    const getUserTextsListResponse: messages.GetUserTextsListResponse = { dummy: messages.DUMMY_CONTENT, userTexts: [] }
+
+    if (appState.userTextsLoadStatus != ResourceLoadStatus.Loaded) {
+        // Not loaded
+        console.error(`GetUserTextsListRequest: User texts not loaded`)
+        return getUserTextsListResponse
+    }
+
+    const userTextsList = []
+    const iterable = appState.userTextsIndex!.values()
+    while (true) {
+        const next = iterable.next()
+        if (next.done) {
+            break
+        }
+        userTextsList.push(next.value)
+    }
+
+    // Return the user text
+    getUserTextsListResponse.userTexts = userTextsList
+    return getUserTextsListResponse
 }

@@ -46,6 +46,7 @@ var options = {
     devtools: path.join(__dirname, 'src', 'pages', 'Devtools', 'index.js'),
     panel: path.join(__dirname, 'src', 'pages', 'Panel', 'index.jsx'),
     reader: path.join(__dirname, 'src', 'pages', 'Reader', 'index.jsx'),
+    userTexts: path.join(__dirname, 'src', 'pages', 'UserTexts', 'index.jsx'),
   },
   chromeExtensionBoilerplate: {
     notHotReload: ['background', 'contentScript', 'devtools'],
@@ -257,6 +258,12 @@ var options = {
       chunks: ['reader'],
       cache: false,
     }),
+    new HtmlWebpackPlugin({
+      template: path.join(__dirname, 'src', 'pages', 'UserTexts', 'index.html'),
+      filename: 'userTexts.html',
+      chunks: ['userTexts'],
+      cache: false,
+    })
   ].filter(Boolean),
   infrastructureLogging: {
     level: 'info',

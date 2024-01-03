@@ -13,31 +13,38 @@ let appState: state.AppState = {
     hskIndex: null,
     dictionary: null,
     dictionaryIndex: null,
+    dictionaryLoadStatus: ResourceLoadStatus.Unloaded,
 
     userTextsIndex: null,
+    userTextsLoadStatus: ResourceLoadStatus.Unloaded,
 
     knownWordsCharacterIndex: null,
     knownWordsIndex: null,
     knownWordsList: null,
+    knownWordsLoadStatus: ResourceLoadStatus.Unloaded,
 
     ignoredWordsList: null,
     ignoredWordsIndex: null,
 
     jiebaData: null,
-
-    dictionaryLoadStatus: ResourceLoadStatus.Unloaded,
-    knownWordsLoadStatus: ResourceLoadStatus.Unloaded,
     jiebaLoadStatus: ResourceLoadStatus.Unloaded,
-    userTextsLoadStatus: ResourceLoadStatus.Unloaded,
 }
 
 function createContextMenus() {
     chrome.contextMenus.removeAll()
+
     chrome.contextMenus.create({
         contexts: ["all"],
         id: "reader-service",
         title: "Chinese Reader"
     })
+
+    chrome.contextMenus.create({
+        contexts: ["all"],
+        id: "user-texts-list",
+        title: "User Texts"
+    })
+
     chrome.contextMenus.onClicked.addListener((info, tab) => {
         if (info.menuItemId === "reader-service") {
             const selectedTabUrl = tab?.url ?? ""
@@ -59,6 +66,11 @@ function createContextMenus() {
                 } else {
                     console.error(`Error creating new user text. Selected text: ${info.selectionText!}`)
                 }
+            })
+        } else if (info.menuItemId == "user-texts-list") {
+            // Open a new tab with the user texts list
+            chrome.tabs.create({
+                url: chrome.runtime.getURL(`userTexts.html`)
             })
         }
     })
@@ -93,7 +105,9 @@ async function handleMessage(request: any): Promise<any> {
         case messages.RequestType.GetUserText:
             return await handlers.handleGetUserTextRequest(appState, req as messages.GetUserTextRequest)
         case messages.RequestType.UpdateUserText:
-            return await handlers.handleUpdateUserText(appState, req as messages.UpdateUserTextRequest)
+            return await handlers.handleUpdateUserTextRequest(appState, req as messages.UpdateUserTextRequest)
+        case messages.RequestType.GetUserTextsList:
+            return await handlers.handleGetUserTextsListRequest(appState, req as messages.GetUserTextsListRequest)
         default:
             console.error(`Unknown request type: ${req.type}`)
             return { dummy: messages.DUMMY_CONTENT } as messages.GenericResponse

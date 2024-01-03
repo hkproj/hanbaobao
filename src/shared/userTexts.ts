@@ -7,7 +7,7 @@ export interface UserText {
     url: string
     segments: Array<string>
     segmentTypes: Array<SegmentType>
-    created: Date
+    createdOn: string
 }
 
 function getNewUUID(): string {

@@ -41,6 +41,7 @@ const Reader = () => {
     // Get the user text id from the url
     const id = searchParams.get('id')
     if (id == null) {
+      console.error("No user text id provided")
       return
     }
     setUserTextId(id)
