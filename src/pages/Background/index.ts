@@ -49,6 +49,11 @@ function createContextMenus() {
         if (info.menuItemId === "reader-service") {
             const selectedTabUrl = tab?.url ?? ""
 
+            // Check if the selected text is empty (after removing whitespace)
+            if (info.selectionText == null || info.selectionText?.trim() == "") {
+                return
+            }
+
             // Send a message to create a new user text
             const addNewUserTextRequest: messages.AddNewUserTextRequest = {
                 type: messages.RequestType.AddNewUserText,
