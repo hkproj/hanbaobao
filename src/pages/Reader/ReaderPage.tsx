@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 
-import { Col, Container, Row } from 'react-bootstrap'
+import { Button, Col, Container, FormControl, Row } from 'react-bootstrap'
 import { AddKnownWordRequest, DUMMY_CONTENT, GetUserTextRequest, GetUserTextResponse, RemoveKnownWordRequest, RequestType, SearchTermRequest, SearchTermResponse, UpdateUserTextRequest, } from '../../shared/messages'
 import { ResourceLoadStatus } from '../../shared/loading';
 
@@ -36,6 +36,9 @@ const Reader = () => {
   const [selectedSegmentIndex, setSelectedSegmentIndex] = useState<number | null>(null);
 
   const [searchTermResponse, setSearchTermResponse] = useState<SearchTermResponse>(EMPTY_RESULTS);
+
+  const [isInTitleEditMode, setIsInTitleEditMode] = useState(false);
+  const [newTitle, setNewTitle] = useState("");
 
   useEffect(() => {
     // Get the user text id from the url
@@ -266,10 +269,55 @@ const Reader = () => {
     }
   }
 
+  function saveNewTitle() {
+    const newUserText = { ...userText!, name: newTitle }
+    saveUserText(newUserText).then(() => {
+      setIsInTitleEditMode(false)
+      reloadUserText().catch((error) => { console.error(error) })
+    }).catch((error) => { console.error(error) })
+  }
+
+  function enterEditMode() {
+    setNewTitle(userText!.name)
+    setIsInTitleEditMode(true)
+  }
+
+  function getTitleView() {
+    if (userTextId == null || userTextLoadingStatus != ResourceLoadStatus.Loaded) {
+      return null;
+    } else {
+      if (isInTitleEditMode) {
+        return <>
+          <div className='col-2 my-auto my-auto'>
+            <Button className="m-1" variant="success" onClick={() => saveNewTitle()}>Save</Button>
+            <Button className="m-1" variant="danger" onClick={() => { setIsInTitleEditMode(false) }}>Cancel</Button>
+          </div>
+          <div className='col-10'>
+            <FormControl
+              type="text"
+              className='m-1 fs-1'
+              value={newTitle}
+              onChange={(event) => { setNewTitle(event.target.value) }}
+            />
+          </div>
+        </>
+      } else {
+        return <>
+          <div className='col-2 my-auto'>
+            <Button className="m-1" variant="primary" onClick={() => { enterEditMode() }}>Edit</Button>
+          </div>
+          <div className='col-10 my-auto'>
+            <span className='m-1 fs-1'>{userText!.name}</span>
+          </div>
+        </>
+      }
+    }
+  }
+
   return (
     <Container fluid={true}>
       <div className='row align-center'>
-        <h1>Reader</h1>
+        {getTitleView()}
       </div>
       <div className="row">
         <div className="col-8">

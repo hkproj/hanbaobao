@@ -108,6 +108,8 @@ async function handleMessage(request: any): Promise<any> {
             return await handlers.handleUpdateUserTextRequest(appState, req as messages.UpdateUserTextRequest)
         case messages.RequestType.GetUserTextsList:
             return await handlers.handleGetUserTextsListRequest(appState, req as messages.GetUserTextsListRequest)
+        case messages.RequestType.DeleteUserText:
+            return await handlers.handleDeleteUserTextRequest(appState, req as messages.DeleteUserTextRequest)
         default:
             console.error(`Unknown request type: ${req.type}`)
             return { dummy: messages.DUMMY_CONTENT } as messages.GenericResponse

@@ -49,7 +49,11 @@ export function handleSearchTermRequest(appState: AppState, request: messages.Se
         serviceEnabled: appState.searchServiceEnabled
     }
 
-    if (appState.dictionaryLoadStatus === ResourceLoadStatus.Unloaded || (!appState.searchServiceEnabled && !searchTermRequest.ignoreDisabledStatus)) {
+    if (appState.dictionaryLoadStatus != ResourceLoadStatus.Loaded || (!appState.searchServiceEnabled && !searchTermRequest.ignoreDisabledStatus)) {
+        return searchResponse
+    }
+
+    if (appState.knownWordsLoadStatus != ResourceLoadStatus.Loaded || (!appState.knownWordsEnabled && !searchTermRequest.ignoreDisabledStatus)) {
         return searchResponse
     }
 
@@ -133,7 +137,7 @@ export function handleGetUserTextRequest(appState: AppState, request: messages.G
     return getUserTextResponse
 }
 
-export function handleUpdateUserTextRequest(appState: AppState, request: messages.UpdateUserTextRequest): messages.UpdateUserTextResponse {
+export async function handleUpdateUserTextRequest(appState: AppState, request: messages.UpdateUserTextRequest): Promise<messages.UpdateUserTextResponse> {
     const updateUserTextRequest = request as messages.UpdateUserTextRequest
     const updateUserTextResponse: messages.UpdateUserTextResponse = { dummy: messages.DUMMY_CONTENT }
 
@@ -151,8 +155,30 @@ export function handleUpdateUserTextRequest(appState: AppState, request: message
 
     // Update the user text
     appState.userTextsIndex!.set(updateUserTextRequest.userText.id, updateUserTextRequest.userText)
-    state.saveUserTexts(appState)
+    await state.saveUserTexts(appState)
     return (updateUserTextResponse)
+}
+
+export async function handleDeleteUserTextRequest(appState: AppState, request: messages.DeleteUserTextRequest): Promise<messages.DeleteUserTextResponse> {
+    const deleteUserTextRequest = request as messages.DeleteUserTextRequest
+    const deleteUserTextResponse: messages.DeleteUserTextResponse = { dummy: messages.DUMMY_CONTENT }
+
+    if (appState.userTextsLoadStatus != ResourceLoadStatus.Loaded) {
+        // Not loaded
+        console.error(`DeleteUserTextRequest: User texts not loaded`)
+        return deleteUserTextResponse
+    }
+
+    if (appState.userTextsIndex!.has(deleteUserTextRequest.id) == false) {
+        // Not found
+        console.error(`DeleteUserTextRequest: User text with id ${deleteUserTextRequest.id} not found`)
+        return deleteUserTextResponse
+    }
+
+    // Delete the user text
+    appState.userTextsIndex!.delete(deleteUserTextRequest.id)
+    await state.saveUserTexts(appState)
+    return deleteUserTextResponse
 }
 
 export function handleGetUserTextsListRequest(appState: AppState, request: messages.GetUserTextsListRequest): messages.GetUserTextsListResponse {
@@ -173,6 +199,13 @@ export function handleGetUserTextsListRequest(appState: AppState, request: messa
         }
         userTextsList.push(next.value)
     }
+
+    // Sort the user texts by creation date
+    userTextsList.sort((a, b) => {
+        const dateA = new Date(a.createdOn)
+        const dateB = new Date(b.createdOn)
+        return dateB.getTime() - dateA.getTime()
+    })
 
     // Return the user text
     getUserTextsListResponse.userTexts = userTextsList
