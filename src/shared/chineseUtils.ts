@@ -1,4 +1,5 @@
 import { AppState } from "../pages/Background/state"
+import { TextSegment } from "./userTexts"
 
 export interface ChineseDictionaryEntry {
     traditional: string
@@ -148,21 +149,22 @@ export function getChineseCharacters(text: string): string {
     return chineseChars
 }
 
-export function categorizeSegments(segmentList: string[], appState: AppState): SegmentType[] {
-    const segmentTypes: SegmentType[] = []
-    segmentList.forEach((segment) => {
-        const chineseChars = getChineseCharacters(segment)
+export function categorizeSegments(segments: Array<TextSegment>, appState: AppState) {
+    for (let i = 0; i < segments.length; i++) {
+        const chineseChars = getChineseCharacters(segments[i].text)
+        let segmentType = SegmentType.Unknown;
+
         if (chineseChars.length == 0) {
             // The segment is not a Chinese word
-            segmentTypes.push(SegmentType.Ignored)
+            segmentType = SegmentType.Ignored
         } else {
             // Check if the segment is a known word
             if (appState.knownWordsIndex!.has(chineseChars)) {
-                segmentTypes.push(SegmentType.Known)
+                segmentType = SegmentType.Known
             } else {
-                segmentTypes.push(SegmentType.Unknown)
+                segmentType = SegmentType.Unknown
             }
         }
-    })
-    return segmentTypes
+        segments[i].type = segmentType
+    }
 }

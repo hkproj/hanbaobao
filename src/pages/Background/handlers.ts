@@ -1,7 +1,7 @@
 import * as messages from '../../shared/messages'
 import { ResourceLoadStatus } from "../../shared/loading";
 import { AppState } from './state';
-import { UserText, addUserText } from "../../shared/userTexts";
+import { TextSegment, UserText, addUserText } from "../../shared/userTexts";
 import * as chinese from "../../shared/chineseUtils";
 import * as jieba from "../../shared/jieba";
 import * as state from "./state";
@@ -13,14 +13,24 @@ export async function handleAddNewUserTextRequest(appState: AppState, addNewUser
         return addNewUserTextResponse
     }
 
-    const segments = jieba.cut(appState.jiebaData!, addNewUserTextRequest.text)
-    const segmentTypes = chinese.categorizeSegments(segments, appState)
+    const segmentsTexts = jieba.cut(appState.jiebaData!, addNewUserTextRequest.text)
+
+    const segments: Array<TextSegment> = []
+
+    for (let i = 0; i < segmentsTexts.length; i++) {
+        segments.push({
+            text: segmentsTexts[i],
+            type: chinese.SegmentType.Unknown,
+        })
+    }
+
+    chinese.categorizeSegments(segments, appState)
+
     const userTextToAdd: UserText = {
         id: "", // It will be assigned a new unique id
         name: "New user text",
         url: addNewUserTextRequest.url,
         segments: segments,
-        segmentTypes: segmentTypes,
         createdOn: new Date().toISOString(),
     }
 

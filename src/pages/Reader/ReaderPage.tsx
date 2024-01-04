@@ -9,7 +9,7 @@ import './ReaderPage.scss';
 import { ResultsViewer } from './ResultsViewer';
 import { getWordUnderCursor } from '../Content/textSelect';
 import { SegmentType } from '../../shared/chineseUtils';
-import { UserText } from '../../shared/userTexts';
+import { TextSegment, UserText } from '../../shared/userTexts';
 
 const EMPTY_RESULTS: SearchTermResponse = {
   dictionary: {
@@ -51,10 +51,10 @@ const Reader = () => {
   }, [])
 
   useEffect(() => {
+    // Load the user text given its id
     if (userTextId == null) {
       return
     }
-
     reloadUserText().catch((error) => {
       console.error(error)
     })
@@ -79,34 +79,34 @@ const Reader = () => {
     return await chrome.runtime.sendMessage(request)
   }
 
-  async function updateSegments(newSegments: string[]) {
+  async function updateSegments(newSegments: Array<TextSegment>) {
     const newUserText = { ...userText!, segments: newSegments }
     await saveUserText(newUserText)
     await reloadUserText()
   }
 
-  async function setAsKnownWord(word: string) {
-    const request: AddKnownWordRequest = { type: RequestType.AddKnownWord, word: word }
+  async function setAsKnownWord(segmentIndex: number) {
+    const request: AddKnownWordRequest = { type: RequestType.AddKnownWord, word: userText!.segments[segmentIndex].text }
     await chrome.runtime.sendMessage(request)
 
     // Update the segment type
-    const newSegmentTypes = [...userText!.segmentTypes]
-    newSegmentTypes[selectedSegmentIndex!] = SegmentType.Known
-    const newUserText = { ...userText!, segmentTypes: newSegmentTypes }
+    const newSegments = [...userText!.segments]
+    newSegments[segmentIndex].type = SegmentType.Known
+    const newUserText: UserText = { ...userText!, segments: newSegments }
     await saveUserText(newUserText)
 
     // Reload the user text to update the known words
     await reloadUserText()
   }
 
-  async function setAsUnknownWord(word: string) {
-    const request: RemoveKnownWordRequest = { type: RequestType.RemoveKnownWord, word: word }
+  async function setAsUnknownWord(segmentIndex: number) {
+    const request: RemoveKnownWordRequest = { type: RequestType.RemoveKnownWord, word: userText!.segments[segmentIndex].text }
     await chrome.runtime.sendMessage(request)
 
     // Update the segment type
-    const newSegmentTypes = [...userText!.segmentTypes]
-    newSegmentTypes[selectedSegmentIndex!] = SegmentType.Unknown
-    const newUserText = { ...userText!, segmentTypes: newSegmentTypes }
+    const newSegments = [...userText!.segments]
+    newSegments[segmentIndex].type = SegmentType.Unknown
+    const newUserText: UserText = { ...userText!, segments: newSegments }
     await saveUserText(newUserText)
 
     // Reload the user text to update the known words
@@ -117,7 +117,7 @@ const Reader = () => {
     if (event.code == 'KeyQ') {
       // Split the current segment into two segments based on the cursor position
       if (selectedSegmentNode != null && selectedSegmentNode != null && selectedSegmentOffset != null) {
-        const segmentText = userText!.segments[selectedSegmentIndex!]
+        const segmentText = userText!.segments[selectedSegmentIndex!].text;
 
         // Do not split if only composed of one character
         if (segmentText.length <= 1) {
@@ -133,7 +133,18 @@ const Reader = () => {
         // Split and save
         const secondSegmentText = segmentText.substring(selectedSegmentOffset)
         const newSegments = [...userText!.segments]
-        newSegments.splice(selectedSegmentIndex!, 1, firstSegmentText, secondSegmentText)
+
+        const newFirstSegment: TextSegment = {
+          text: firstSegmentText,
+          type: SegmentType.Unknown
+        }
+
+        const newSecondSegment = {
+          text: secondSegmentText,
+          type: SegmentType.Unknown
+        }
+
+        newSegments.splice(selectedSegmentIndex!, 1, newFirstSegment, newSecondSegment)
         updateSegments(newSegments).catch((error) => { console.error(error) })
       }
     } else if (event.code == 'KeyW') {
@@ -171,7 +182,7 @@ const Reader = () => {
       let joinedSegmentText = ""
       for (let i = startSegmentIndex; i <= endSegmentIndex; i++) {
         // Create the new segment text
-        joinedSegmentText += newSegments[i]
+        joinedSegmentText += newSegments[i].text
       }
 
       if (joinedSegmentText.length == 0) {
@@ -179,20 +190,23 @@ const Reader = () => {
         return
       }
 
+      const segmentToAdd: TextSegment = {
+        text: joinedSegmentText,
+        type: SegmentType.Unknown
+      } 
+
       // Delete the old segments, insert the joined one and save
-      newSegments.splice(startSegmentIndex, endSegmentIndex - startSegmentIndex + 1, joinedSegmentText)
+      newSegments.splice(startSegmentIndex, endSegmentIndex - startSegmentIndex + 1, segmentToAdd)
       updateSegments(newSegments).catch((error) => { console.error(error) })
     } else if (event.code == 'Digit1') {
       if (selectedSegmentNode != null && selectedSegmentIndex != null) {
         // Mark the selected segment as ignored
-        const segmentText = userText!.segments[selectedSegmentIndex!]
-        setAsUnknownWord(segmentText).catch((error) => { console.error(error) })
+        setAsUnknownWord(selectedSegmentIndex).catch((error) => { console.error(error) })
       }
     } else if (event.code == 'Digit2') {
       if (selectedSegmentNode != null && selectedSegmentIndex != null) {
         // Mark the selected segment as a known word
-        const segmentText = userText!.segments[selectedSegmentIndex!]
-        setAsKnownWord(segmentText).catch((error) => { console.error(error) })
+        setAsKnownWord(selectedSegmentIndex).catch((error) => { console.error(error) })
       }
     }
   }
@@ -252,7 +266,7 @@ const Reader = () => {
     } else {
       return <div className="segment-list" onMouseMove={onMouseMoveSegmentList}>
         {userText!.segments.map((segment, index) => {
-          let segmentType = userText!.segmentTypes[index]
+          let segmentType = segment.type
 
           let segmentClass = "segment "
           if (segmentType == SegmentType.Ignored) {
@@ -263,7 +277,7 @@ const Reader = () => {
             segmentClass += "segment-known"
           }
 
-          return <span data-segment-index={index} className={segmentClass} key={index}>{segment}</span>
+          return <span data-segment-index={index} className={segmentClass} key={index}>{segment.text}</span>
         })}
       </div>
     }

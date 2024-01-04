@@ -1,12 +1,16 @@
 import { SegmentType } from "./chineseUtils";
 import { ConfigurationKey, readConfiguration, writeConfiguration } from "./configuration";
 
+export interface TextSegment {
+    text: string
+    type: SegmentType
+}
+
 export interface UserText {
     id: string
     name: string
     url: string
-    segments: Array<string>
-    segmentTypes: Array<SegmentType>
+    segments: Array<TextSegment>
     createdOn: string
 }
 
