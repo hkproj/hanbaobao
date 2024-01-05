@@ -190,13 +190,8 @@ export function handleGetUserTextsListRequest(appState: AppState, request: messa
     }
 
     const userTextsList = []
-    const iterable = appState.userTextsIndex!.values()
-    while (true) {
-        const next = iterable.next()
-        if (next.done) {
-            break
-        }
-        userTextsList.push(next.value)
+    for (const userText of appState.userTextsIndex!.values()) {
+        userTextsList.push(userText)
     }
 
     // Sort the user texts by creation date
