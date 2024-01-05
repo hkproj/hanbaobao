@@ -1,5 +1,8 @@
 import { SegmentType } from "./chineseUtils";
 import { ConfigurationKey, readConfiguration, writeConfiguration } from "./configuration";
+import * as jieba from "./jieba";
+import { AppState } from "../pages/Background/state";
+import * as chinese from "./chineseUtils";
 
 export interface TextSegment {
     text: string
@@ -25,18 +28,29 @@ export async function addUserText(userTextsIndex: Map<string, UserText>, userTex
     return [userText, userTextsIndex]
 }
 
-export async function deleteUserText(userTextList: Array<UserText>, userTextId: string) {
-    const index = userTextList.findIndex((userText) => userText.id === userTextId)
-    if (index >= 0) {
-        userTextList.splice(index, 1)
+export function updateSegmentTypesForAllUserTexts(appState: AppState): void {
+    for (const userText of appState.userTextsIndex!.values()) {
+        updateSegmentTypes(userText.segments, appState)
     }
-    return userTextList
 }
 
-export async function updateUserText(userTextList: Array<UserText>, userText: UserText) {
-    const index = userTextList.findIndex((userText) => userText.id === userText.id)
-    if (index >= 0) {
-        userTextList[index] = userText
+export function segmentAndCategorizeText(text: string, appState: AppState): Array<TextSegment> {
+    const segmentsTexts = jieba.cut(appState.jiebaData!, text)
+
+    const segments: Array<TextSegment> = []
+
+    for (let i = 0; i < segmentsTexts.length; i++) {
+        segments.push({
+            text: segmentsTexts[i],
+            type: chinese.SegmentType.Unknown,
+        })
     }
-    return userTextList
+
+    updateSegmentTypes(segments, appState)
+
+    return segments
+}
+
+export function updateSegmentTypes(segments: Array<TextSegment>, appState: AppState): void {
+    chinese.categorizeSegments(segments, appState)
 }

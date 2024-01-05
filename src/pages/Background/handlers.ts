@@ -1,7 +1,7 @@
 import * as messages from '../../shared/messages'
 import { ResourceLoadStatus } from "../../shared/loading";
 import { AppState } from './state';
-import { TextSegment, UserText, addUserText } from "../../shared/userTexts";
+import { TextSegment, UserText, addUserText as generateIdAndAddUserText, segmentAndCategorizeText, updateSegmentTypesForAllUserTexts } from "../../shared/userTexts";
 import * as chinese from "../../shared/chineseUtils";
 import * as jieba from "../../shared/jieba";
 import * as state from "./state";
@@ -13,18 +13,7 @@ export async function handleAddNewUserTextRequest(appState: AppState, addNewUser
         return addNewUserTextResponse
     }
 
-    const segmentsTexts = jieba.cut(appState.jiebaData!, addNewUserTextRequest.text)
-
-    const segments: Array<TextSegment> = []
-
-    for (let i = 0; i < segmentsTexts.length; i++) {
-        segments.push({
-            text: segmentsTexts[i],
-            type: chinese.SegmentType.Unknown,
-        })
-    }
-
-    chinese.categorizeSegments(segments, appState)
+    const segments = segmentAndCategorizeText(addNewUserTextRequest.text, appState)
 
     const userTextToAdd: UserText = {
         id: "", // It will be assigned a new unique id
@@ -34,11 +23,7 @@ export async function handleAddNewUserTextRequest(appState: AppState, addNewUser
         createdOn: new Date().toISOString(),
     }
 
-    const [newUserText, newUserTextsIndex] = await addUserText(appState.userTextsIndex!, userTextToAdd)
-    // Verify that the id has been assigned, otherwise throw an error
-    if (newUserText.id == null || newUserText.id == "") {
-        throw new Error("No id was assigned to a newly created user text")
-    }
+    const [newUserText, newUserTextsIndex] = await generateIdAndAddUserText(appState.userTextsIndex!, userTextToAdd)
 
     // Save the new user text and the list
     addNewUserTextResponse.id = newUserText.id
@@ -106,6 +91,8 @@ export async function handleAddKnownWordRequest(appState: AppState, request: mes
     if (appState.knownWordsLoadStatus == ResourceLoadStatus.Loaded && appState.knownWordsIndex?.has(request.word) == false) {
         const newKnownWords = appState.knownWordsList!.concat([request.word])
         await state.saveNewKnownWords(appState, newKnownWords)
+        updateSegmentTypesForAllUserTexts(appState)
+        await state.saveUserTexts(appState)
     }
     return addKnownWordsResponse
 }
@@ -115,6 +102,8 @@ export async function handleRemoveKnownWordRequest(appState: AppState, request: 
     if (appState.knownWordsLoadStatus == ResourceLoadStatus.Loaded && appState.knownWordsIndex?.has(request.word) == true) {
         const newKnownWords = appState.knownWordsList!.filter((word) => word != request.word)
         await state.saveNewKnownWords(appState, newKnownWords)
+        updateSegmentTypesForAllUserTexts(appState)
+        await state.saveUserTexts(appState)
     }
     return removeKnownWordsResponse
 }
