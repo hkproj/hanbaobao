@@ -16,6 +16,8 @@ export enum RequestType {
     RemoveKnownWord = "remove-known-word",
     GetUserTextsList = "get-user-texts-list",
     DeleteUserText = "delete-user-text",
+    JoinSegmentsInUserText = "join-segments-in-user-text",
+    SplitSegmentsInUserText = "split-segments-in-user-text",
 }
 
 export interface GenericRequest {
@@ -117,4 +119,26 @@ export interface DeleteUserTextRequest extends GenericRequest {
 }
 
 export interface DeleteUserTextResponse extends GenericResponse {
+}
+
+export interface JoinSegmentsInUserTextRequest extends GenericRequest {
+    userTextId: string,
+    startSegmentIndex: number,
+    endSegmentIndex: number,
+    updateAllOccurrencesInCurrentTextUser: boolean,
+    updateAllOccurrencesInAllUserTexts: boolean,
+}
+
+export interface JoinSegmentsInUserTextResponse extends GenericResponse {
+}
+
+export interface SplitSegmentsInUserTextRequest extends GenericRequest {
+    userTextId: string,
+    segmentIndex: number,
+    splitIndex: number,
+    updateAllOccurrencesInCurrentTextUser: boolean,
+    updateAllOccurrencesInAllUserTexts: boolean,
+}
+
+export interface SplitSegmentsInUserTextResponse extends GenericResponse {
 }

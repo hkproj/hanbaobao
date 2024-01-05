@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 
 import { Button, Col, Container, FormControl, Row } from 'react-bootstrap'
-import { AddKnownWordRequest, DUMMY_CONTENT, GetUserTextRequest, GetUserTextResponse, RemoveKnownWordRequest, RequestType, SearchTermRequest, SearchTermResponse, UpdateUserTextRequest, } from '../../shared/messages'
+import { AddKnownWordRequest, DUMMY_CONTENT, GetUserTextRequest, GetUserTextResponse, JoinSegmentsInUserTextRequest, RemoveKnownWordRequest, RequestType, SearchTermRequest, SearchTermResponse, SplitSegmentsInUserTextRequest, UpdateUserTextRequest, } from '../../shared/messages'
 import { ResourceLoadStatus } from '../../shared/loading';
 
 import 'bootstrap/dist/css/bootstrap.min.css'
@@ -61,6 +61,11 @@ const Reader = () => {
   }, [userTextId])
 
   async function reloadUserText() {
+    // Reset selection
+    setSelectedSegmentNode(null)
+    setSelectedSegmentOffset(null)
+    setSelectedSegmentIndex(null)
+
     setUserTextLoadingStatus(ResourceLoadStatus.Loading);
     console.log(`Loading user text ${userTextId}`)
     // Retrieve the user text from its id
@@ -77,6 +82,38 @@ const Reader = () => {
     // Save the user text
     const request: UpdateUserTextRequest = { type: RequestType.UpdateUserText, userText: newUserText }
     return await chrome.runtime.sendMessage(request)
+  }
+
+  async function splitSegments(segmentIndex: number, splitIndex: number) {
+    const request: SplitSegmentsInUserTextRequest = {
+      type: RequestType.SplitSegmentsInUserText, 
+      segmentIndex: segmentIndex, 
+      splitIndex: splitIndex, 
+      updateAllOccurrencesInAllUserTexts: false, 
+      updateAllOccurrencesInCurrentTextUser: false, 
+      userTextId: userTextId!
+    }
+
+    await chrome.runtime.sendMessage(request)
+
+    // Reload the user text
+    await reloadUserText()
+  }
+
+  async function joinSegments(startSegmentIndex: number, endSegmentIndex: number) {
+    const request: JoinSegmentsInUserTextRequest = {
+      type: RequestType.JoinSegmentsInUserText, 
+      startSegmentIndex: startSegmentIndex, 
+      endSegmentIndex: endSegmentIndex, 
+      updateAllOccurrencesInAllUserTexts: false, 
+      updateAllOccurrencesInCurrentTextUser: false, 
+      userTextId: userTextId!
+    }
+
+    await chrome.runtime.sendMessage(request)
+
+    // Reload the user text
+    await reloadUserText()
   }
 
   async function updateSegments(newSegments: Array<TextSegment>) {
@@ -118,22 +155,8 @@ const Reader = () => {
           return
         }
 
-        // Split and save
-        const secondSegmentText = segmentText.substring(selectedSegmentOffset)
-        const newSegments = [...userText!.segments]
-
-        const newFirstSegment: TextSegment = {
-          text: firstSegmentText,
-          type: SegmentType.Unknown
-        }
-
-        const newSecondSegment = {
-          text: secondSegmentText,
-          type: SegmentType.Unknown
-        }
-
-        newSegments.splice(selectedSegmentIndex!, 1, newFirstSegment, newSecondSegment)
-        updateSegments(newSegments).catch((error) => { console.error(error) })
+        // Split the segment
+        splitSegments(selectedSegmentIndex!, selectedSegmentOffset!).catch((error) => { console.error(error) })
       }
     } else if (event.code == 'KeyW') {
       // Join the selected segments together
@@ -164,28 +187,9 @@ const Reader = () => {
         // Only allow to join up to three segments
         return
       }
-
-
-      const newSegments = [...userText!.segments]
-      let joinedSegmentText = ""
-      for (let i = startSegmentIndex; i <= endSegmentIndex; i++) {
-        // Create the new segment text
-        joinedSegmentText += newSegments[i].text
-      }
-
-      if (joinedSegmentText.length == 0) {
-        // Invalid selection
-        return
-      }
-
-      const segmentToAdd: TextSegment = {
-        text: joinedSegmentText,
-        type: SegmentType.Unknown
-      } 
-
-      // Delete the old segments, insert the joined one and save
-      newSegments.splice(startSegmentIndex, endSegmentIndex - startSegmentIndex + 1, segmentToAdd)
-      updateSegments(newSegments).catch((error) => { console.error(error) })
+      
+      // Join the segments
+      joinSegments(startSegmentIndex, endSegmentIndex).catch((error) => { console.error(error) })
     } else if (event.code == 'Digit1') {
       if (selectedSegmentNode != null && selectedSegmentIndex != null) {
         // Mark the selected segment as ignored

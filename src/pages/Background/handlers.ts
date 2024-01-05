@@ -1,7 +1,7 @@
 import * as messages from '../../shared/messages'
 import { ResourceLoadStatus } from "../../shared/loading";
 import { AppState } from './state';
-import { TextSegment, UserText, addUserText as generateIdAndAddUserText, segmentAndCategorizeText, updateSegmentTypesForAllUserTexts } from "../../shared/userTexts";
+import { TextSegment, UserText, addUserText as generateIdAndAddUserText, segmentAndCategorizeText, updateSegmentTypes, updateSegmentTypesForAllUserTexts } from "../../shared/userTexts";
 import * as chinese from "../../shared/chineseUtils";
 import * as jieba from "../../shared/jieba";
 import * as state from "./state";
@@ -204,4 +204,116 @@ export function handleGetUserTextsListRequest(appState: AppState, request: messa
     // Return the user text
     getUserTextsListResponse.userTexts = userTextsList
     return getUserTextsListResponse
+}
+
+export async function handleSplitSegmentsInUserTextRequest(appState: AppState, request: messages.SplitSegmentsInUserTextRequest): Promise<messages.SplitSegmentsInUserTextResponse> {
+    if (request.updateAllOccurrencesInAllUserTexts || request.updateAllOccurrencesInCurrentTextUser) {
+        throw new Error("Not implemented")
+    }
+
+    const response: messages.SplitSegmentsInUserTextResponse = { dummy: messages.DUMMY_CONTENT }
+
+    // Retrieve the user text
+    if (appState.userTextsLoadStatus != ResourceLoadStatus.Loaded) {
+        // Not loaded
+        console.error(`SplitSegmentsInUserTextRequest: User texts not loaded`)
+        return response
+    }
+
+    const userTextId = request.userTextId
+
+    if (appState.userTextsIndex!.has(userTextId) == false) {
+        // Not found
+        console.error(`JoinSegmentsInUserTextRequest: User text with id ${userTextId} not found`)
+        return response
+    }
+
+    // Retrieve the segments
+    const userText = appState.userTextsIndex!.get(userTextId)!
+    const newSegments = [...userText.segments]
+    const segmentToSplit = newSegments[request.segmentIndex]
+
+    // Do not split if only composed of one character
+    if (segmentToSplit.text.length <= 1) {
+        return response
+    }
+
+    const firstSegmentText = segmentToSplit.text.substring(0, request.splitIndex)
+    // Do not split if the cursor is at the beginning of the segment or at the end
+    if (firstSegmentText.length == 0 || firstSegmentText.length == segmentToSplit.text.length) {
+        return response
+    }
+
+    const secondSegmentText = segmentToSplit.text.substring(request.splitIndex)
+
+    // Create the new segments
+
+    const newFirstSegment: TextSegment = {
+        text: firstSegmentText,
+        type: chinese.SegmentType.Unknown
+    }
+
+    const newSecondSegment: TextSegment = {
+        text: secondSegmentText,
+        type: chinese.SegmentType.Unknown
+    }
+
+    // Update the segments list
+    newSegments.splice(request.segmentIndex, 1, newFirstSegment, newSecondSegment)
+    // Categorize the new segments
+    updateSegmentTypes(newSegments, appState)
+    // Update the user text
+    userText.segments = newSegments
+    // Save the user text list
+    await state.saveUserTexts(appState)
+    
+    return response
+}
+
+export async function handleJoinSegmentsInUserTextRequest(appState: AppState, request: messages.JoinSegmentsInUserTextRequest): Promise<messages.JoinSegmentsInUserTextResponse> {
+    if (request.updateAllOccurrencesInAllUserTexts || request.updateAllOccurrencesInCurrentTextUser) {
+        throw new Error("Not implemented")
+    }
+
+    const response: messages.JoinSegmentsInUserTextResponse = { dummy: messages.DUMMY_CONTENT }
+
+    // Retrieve the user text
+    if (appState.userTextsLoadStatus != ResourceLoadStatus.Loaded) {
+        // Not loaded
+        console.error(`JoinSegmentsInUserTextRequest: User texts not loaded`)
+        return response
+    }
+
+    const userTextId = request.userTextId
+    if (appState.userTextsIndex!.has(userTextId) == false) {
+        // Not found
+        console.error(`JoinSegmentsInUserTextRequest: User text with id ${userTextId} not found`)
+        return response
+    }
+
+    // Retrieve the segments
+    const userText = appState.userTextsIndex!.get(userTextId)!
+    const newSegments = [...userText.segments]
+
+    // Join the segments
+    const joinedSegment: TextSegment = {
+        text: "",
+        type: chinese.SegmentType.Unknown,
+    }
+
+    for (let i = request.startSegmentIndex; i <= request.endSegmentIndex; i++) {
+        // Create the new segment text
+        joinedSegment.text += newSegments[i].text
+    }
+
+    // Update the segments
+    newSegments.splice(request.startSegmentIndex, request.endSegmentIndex - request.startSegmentIndex + 1, joinedSegment)
+    // Categorize the new segment
+    updateSegmentTypes(newSegments, appState)
+    // Update the user text
+    userText.segments = newSegments
+    // Save the user text list
+    await state.saveUserTexts(appState)
+
+    return response
 }
