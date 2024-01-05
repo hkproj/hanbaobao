@@ -89,12 +89,6 @@ const Reader = () => {
     const request: AddKnownWordRequest = { type: RequestType.AddKnownWord, word: userText!.segments[segmentIndex].text }
     await chrome.runtime.sendMessage(request)
 
-    // Update the segment type
-    const newSegments = [...userText!.segments]
-    newSegments[segmentIndex].type = SegmentType.Known
-    const newUserText: UserText = { ...userText!, segments: newSegments }
-    await saveUserText(newUserText)
-
     // Reload the user text to update the known words
     await reloadUserText()
   }
@@ -102,12 +96,6 @@ const Reader = () => {
   async function setAsUnknownWord(segmentIndex: number) {
     const request: RemoveKnownWordRequest = { type: RequestType.RemoveKnownWord, word: userText!.segments[segmentIndex].text }
     await chrome.runtime.sendMessage(request)
-
-    // Update the segment type
-    const newSegments = [...userText!.segments]
-    newSegments[segmentIndex].type = SegmentType.Unknown
-    const newUserText: UserText = { ...userText!, segments: newSegments }
-    await saveUserText(newUserText)
 
     // Reload the user text to update the known words
     await reloadUserText()
