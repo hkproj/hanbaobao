@@ -54,3 +54,41 @@ export function segmentAndCategorizeText(text: string, appState: AppState): Arra
 export function updateSegmentTypes(segments: Array<TextSegment>, appState: AppState): void {
     chinese.categorizeSegments(segments, appState)
 }
+
+export function joinSegmentsInUserText(userText: UserText, segmentTexts: string[]): void {
+    if (segmentTexts.length < 2) {
+        throw new Error("Cannot join less than two segments")
+    }
+
+    for (let i = 0; i < segmentTexts.length; i++) {
+        if (segmentTexts[i].trim().length == 0) {
+            throw new Error("Cannot join empty segments")
+        }
+    }
+
+    let startIndex = 0;
+    while (startIndex < userText.segments.length - (segmentTexts.length - 1)) {
+
+        let match = true;
+
+        // Verify if all the segments match starting from 'startIndex'
+        for (let currentSegmentIndex = 0; currentSegmentIndex < segmentTexts.length; currentSegmentIndex++) {
+            if (userText.segments[startIndex + currentSegmentIndex].text != segmentTexts[currentSegmentIndex]) {
+                match = false;
+                break;
+            }
+        }
+
+        if (match) {
+            // Replace the segments with a single one
+            const newSegmentText = segmentTexts.join("")
+            userText.segments[startIndex].text = newSegmentText
+            userText.segments[startIndex].type = chinese.SegmentType.Unknown
+
+            // Remove the other segments
+            userText.segments.splice(startIndex + 1, segmentTexts.length - 1)
+        }
+
+        startIndex++
+    }
+}

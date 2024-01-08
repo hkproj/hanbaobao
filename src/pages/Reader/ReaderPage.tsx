@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 
-import { Button, Col, Container, FormControl, Row } from 'react-bootstrap'
+import { Button, Col, Container, FormControl, Row, Modal, Form } from 'react-bootstrap'
 import { AddKnownWordRequest, DUMMY_CONTENT, GetUserTextRequest, GetUserTextResponse, JoinSegmentsInUserTextRequest, RemoveKnownWordRequest, RequestType, SearchTermRequest, SearchTermResponse, SplitSegmentsInUserTextRequest, UpdateUserTextRequest, } from '../../shared/messages'
 import { ResourceLoadStatus } from '../../shared/loading';
 
@@ -23,6 +23,17 @@ const EMPTY_RESULTS: SearchTermResponse = {
   dummy: DUMMY_CONTENT
 }
 
+enum JoinSegmentGloballyType {
+  CurrentUserText = 1,
+  AllUserTexts = 2
+}
+
+const JOIN_SEGMENT_KEY = 'KeyW'
+const SPLIT_SEGMENT_KEY = 'KeyQ'
+const JOIN_SEGMENT_GLOBALLY_KEY = 'KeyM'
+const SET_KNOWN_WORD_KEY = 'Digit2'
+const SET_UNKNOWN_WORD_KEY = 'Digit1'
+
 const Reader = () => {
 
   const searchParams = new URLSearchParams(window.location.search);
@@ -31,9 +42,17 @@ const Reader = () => {
   const [userTextLoadingStatus, setUserTextLoadingStatus] = useState(ResourceLoadStatus.Unloaded);
   const [userText, setUserText] = useState<UserText | null>(null);
 
-  const [selectedSegmentNode, setSelectedSegmentNode] = useState<Node | null>(null);
-  const [selectedSegmentOffset, setSelectedSegmentOffset] = useState<number | null>(null);
-  const [selectedSegmentIndex, setSelectedSegmentIndex] = useState<number | null>(null);
+  // Capture segment under the mouse
+  const [hoverSegmentNode, setSelectedSegmentNode] = useState<Node | null>(null);
+  // Indicates the position of the mouse inside the string
+  const [hoverSegmentOffset, setSelectedSegmentOffset] = useState<number | null>(null);
+  // Indicates the index of the segment under the mouse
+  const [hoverSegmentIndex, setSelectedSegmentIndex] = useState<number | null>(null);
+
+  const [joinSegmentGloballyModal, setJoinSegmentGloballyModal] = useState(false);
+  const [joinSegmentGloballyType, setJoinSegmentGloballyType] = useState<JoinSegmentGloballyType>(JoinSegmentGloballyType.CurrentUserText);
+  const [joinSegmentGloballyStartIndex, setJoinSegmentGloballyStartIndex] = useState<number | null>(null);
+  const [joinSegmentGloballyEndIndex, setJoinSegmentGloballyEndIndex] = useState<number | null>(null);
 
   const [searchTermResponse, setSearchTermResponse] = useState<SearchTermResponse>(EMPTY_RESULTS);
 
@@ -86,11 +105,11 @@ const Reader = () => {
 
   async function splitSegments(segmentIndex: number, splitIndex: number) {
     const request: SplitSegmentsInUserTextRequest = {
-      type: RequestType.SplitSegmentsInUserText, 
-      segmentIndex: segmentIndex, 
-      splitIndex: splitIndex, 
-      updateAllOccurrencesInAllUserTexts: false, 
-      updateAllOccurrencesInCurrentTextUser: false, 
+      type: RequestType.SplitSegmentsInUserText,
+      segmentIndex: segmentIndex,
+      splitIndex: splitIndex,
+      updateAllOccurrencesInAllUserTexts: false,
+      updateAllOccurrencesInCurrentTextUser: false,
       userTextId: userTextId!
     }
 
@@ -100,25 +119,27 @@ const Reader = () => {
     await reloadUserText()
   }
 
-  async function joinSegments(startSegmentIndex: number, endSegmentIndex: number) {
+  async function joinSegments(startSegmentIndex: number, endSegmentIndex: number, globalType: JoinSegmentGloballyType | null = null) {
     const request: JoinSegmentsInUserTextRequest = {
-      type: RequestType.JoinSegmentsInUserText, 
-      startSegmentIndex: startSegmentIndex, 
-      endSegmentIndex: endSegmentIndex, 
-      updateAllOccurrencesInAllUserTexts: false, 
-      updateAllOccurrencesInCurrentTextUser: false, 
+      type: RequestType.JoinSegmentsInUserText,
+      startSegmentIndex: startSegmentIndex,
+      endSegmentIndex: endSegmentIndex,
+      updateAllOccurrencesInAllUserTexts: false,
+      updateAllOccurrencesInCurrentTextUser: false,
       userTextId: userTextId!
+    }
+
+    if (JoinSegmentGloballyType != null) {
+      if (globalType == JoinSegmentGloballyType.CurrentUserText) {
+        request.updateAllOccurrencesInCurrentTextUser = true
+      } else if (globalType == JoinSegmentGloballyType.AllUserTexts) {
+        request.updateAllOccurrencesInAllUserTexts = true
+      }
     }
 
     await chrome.runtime.sendMessage(request)
 
     // Reload the user text
-    await reloadUserText()
-  }
-
-  async function updateSegments(newSegments: Array<TextSegment>) {
-    const newUserText = { ...userText!, segments: newSegments }
-    await saveUserText(newUserText)
     await reloadUserText()
   }
 
@@ -139,10 +160,10 @@ const Reader = () => {
   }
 
   function onKeyUpDocument(event: KeyboardEvent) {
-    if (event.code == 'KeyQ') {
+    if (event.code == SPLIT_SEGMENT_KEY) {
       // Split the current segment into two segments based on the cursor position
-      if (selectedSegmentNode != null && selectedSegmentNode != null && selectedSegmentOffset != null) {
-        const segmentText = userText!.segments[selectedSegmentIndex!].text;
+      if (hoverSegmentNode != null && hoverSegmentNode != null && hoverSegmentOffset != null) {
+        const segmentText = userText!.segments[hoverSegmentIndex!].text;
 
         // Do not split if only composed of one character
         if (segmentText.length <= 1) {
@@ -150,15 +171,15 @@ const Reader = () => {
         }
 
         // Do not split if the cursor is at the beginning of the segment or at the end
-        const firstSegmentText = segmentText.substring(0, selectedSegmentOffset)
+        const firstSegmentText = segmentText.substring(0, hoverSegmentOffset)
         if (firstSegmentText.length == 0 || firstSegmentText.length == segmentText.length) {
           return
         }
 
         // Split the segment
-        splitSegments(selectedSegmentIndex!, selectedSegmentOffset!).catch((error) => { console.error(error) })
+        splitSegments(hoverSegmentIndex!, hoverSegmentOffset!).catch((error) => { console.error(error) })
       }
-    } else if (event.code == 'KeyW') {
+    } else if (event.code == JOIN_SEGMENT_KEY || event.code == JOIN_SEGMENT_GLOBALLY_KEY) {
       // Join the selected segments together
       const selection = window.getSelection()
 
@@ -187,18 +208,25 @@ const Reader = () => {
         // Only allow to join up to three segments
         return
       }
-      
-      // Join the segments
-      joinSegments(startSegmentIndex, endSegmentIndex).catch((error) => { console.error(error) })
-    } else if (event.code == 'Digit1') {
-      if (selectedSegmentNode != null && selectedSegmentIndex != null) {
-        // Mark the selected segment as ignored
-        setAsUnknownWord(selectedSegmentIndex).catch((error) => { console.error(error) })
+
+      if (event.code == JOIN_SEGMENT_GLOBALLY_KEY) {
+        // Ask the user where to join the segments
+        setJoinSegmentGloballyStartIndex(startSegmentIndex)
+        setJoinSegmentGloballyEndIndex(endSegmentIndex)
+        setJoinSegmentGloballyModal(true)
+      } else if (event.code == JOIN_SEGMENT_KEY) {
+        // Join the segments
+        joinSegments(startSegmentIndex, endSegmentIndex, null).catch((error) => { console.error(error) })
       }
-    } else if (event.code == 'Digit2') {
-      if (selectedSegmentNode != null && selectedSegmentIndex != null) {
+    } else if (event.code == SET_UNKNOWN_WORD_KEY) {
+      if (hoverSegmentNode != null && hoverSegmentIndex != null) {
+        // Mark the selected segment as ignored
+        setAsUnknownWord(hoverSegmentIndex).catch((error) => { console.error(error) })
+      }
+    } else if (event.code == SET_KNOWN_WORD_KEY) {
+      if (hoverSegmentNode != null && hoverSegmentIndex != null) {
         // Mark the selected segment as a known word
-        setAsKnownWord(selectedSegmentIndex).catch((error) => { console.error(error) })
+        setAsKnownWord(hoverSegmentIndex).catch((error) => { console.error(error) })
       }
     }
   }
@@ -288,6 +316,35 @@ const Reader = () => {
     setIsInTitleEditMode(true)
   }
 
+  function handleCloseJoinSegmentGloballyModal() {
+    setJoinSegmentGloballyModal(false)
+    setJoinSegmentGloballyType(JoinSegmentGloballyType.CurrentUserText)
+  }
+
+  function getSelectedSegmentsText() {
+    if (joinSegmentGloballyStartIndex == null || joinSegmentGloballyEndIndex == null) {
+      throw new Error('Invalid join segment globally indexes')
+    }
+
+    let selectedSegmentsText = ""
+    for (let i = joinSegmentGloballyStartIndex; i <= joinSegmentGloballyEndIndex; i++) {
+      selectedSegmentsText += userText!.segments[i].text
+    }
+    return selectedSegmentsText
+  }
+
+  async function handleJoinGlobally() {
+    if (joinSegmentGloballyStartIndex == null || joinSegmentGloballyEndIndex == null) {
+      throw new Error('Invalid join segment globally indexes')
+    }
+
+    setJoinSegmentGloballyModal(false)
+    setJoinSegmentGloballyType(JoinSegmentGloballyType.CurrentUserText)
+    setJoinSegmentGloballyStartIndex(null)
+    setJoinSegmentGloballyEndIndex(null)
+    await joinSegments(joinSegmentGloballyStartIndex!, joinSegmentGloballyEndIndex!, joinSegmentGloballyType)
+  }
+
   function getTitleView() {
     if (userTextId == null || userTextLoadingStatus != ResourceLoadStatus.Loaded) {
       return null;
@@ -321,19 +378,52 @@ const Reader = () => {
   }
 
   return (
-    <Container fluid={true}>
-      <div className='row align-center'>
-        {getTitleView()}
-      </div>
-      <div className="row">
-        <div className="col-8">
-          {getTextView()}
+    <>
+      <Modal show={joinSegmentGloballyModal} onHide={handleCloseJoinSegmentGloballyModal}>
+        <Modal.Header closeButton>
+          <Modal.Title>Where do you want to join the two words?</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <p>
+            Selected text: <strong>{joinSegmentGloballyModal ? getSelectedSegmentsText() : ""}</strong>
+          </p>
+          <Form>
+            <Form.Check
+              type={'radio'}
+              id={'jointype-current'}
+              label={'Current text'}
+              checked={joinSegmentGloballyType == JoinSegmentGloballyType.CurrentUserText}
+              onClick={() => setJoinSegmentGloballyType(JoinSegmentGloballyType.CurrentUserText)}
+            />
+            <Form.Check
+              type={'radio'}
+              id={'jointype-all'}
+              label={'All texts'}
+              checked={joinSegmentGloballyType == JoinSegmentGloballyType.AllUserTexts}
+              onClick={() => setJoinSegmentGloballyType(JoinSegmentGloballyType.AllUserTexts)}
+            />
+          </Form>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={handleCloseJoinSegmentGloballyModal}>Cancel</Button>
+          <Button variant="primary" onClick={() => handleJoinGlobally().catch((error) => console.error(error))}>Join</Button>
+        </Modal.Footer>
+      </Modal>
+      <Container fluid={true}>
+        <div className='row align-center'>
+          {getTitleView()}
         </div>
-        <div className="col-4">
-          <ResultsViewer response={searchTermResponse} />
+        <div className="row">
+          <div className="col-8">
+            {getTextView()}
+          </div>
+          <div className="col-4">
+            <ResultsViewer response={searchTermResponse} />
+          </div>
         </div>
-      </div>
-    </Container>
+      </Container>
+    </>
+
   );
 };
 

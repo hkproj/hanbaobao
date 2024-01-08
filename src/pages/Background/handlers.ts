@@ -1,7 +1,7 @@
 import * as messages from '../../shared/messages'
 import { ResourceLoadStatus } from "../../shared/loading";
 import { AppState } from './state';
-import { TextSegment, UserText, addUserText as generateIdAndAddUserText, segmentAndCategorizeText, updateSegmentTypes, updateSegmentTypesForAllUserTexts } from "../../shared/userTexts";
+import { TextSegment, UserText, addUserText as generateIdAndAddUserText, segmentAndCategorizeText, updateSegmentTypes, updateSegmentTypesForAllUserTexts, joinSegmentsInUserText } from "../../shared/userTexts";
 import * as chinese from "../../shared/chineseUtils";
 import * as jieba from "../../shared/jieba";
 import * as state from "./state";
@@ -271,10 +271,6 @@ export async function handleSplitSegmentsInUserTextRequest(appState: AppState, r
 }
 
 export async function handleJoinSegmentsInUserTextRequest(appState: AppState, request: messages.JoinSegmentsInUserTextRequest): Promise<messages.JoinSegmentsInUserTextResponse> {
-    if (request.updateAllOccurrencesInAllUserTexts || request.updateAllOccurrencesInCurrentTextUser) {
-        throw new Error("Not implemented")
-    }
-
     const response: messages.JoinSegmentsInUserTextResponse = { dummy: messages.DUMMY_CONTENT }
 
     // Retrieve the user text
@@ -294,6 +290,8 @@ export async function handleJoinSegmentsInUserTextRequest(appState: AppState, re
     // Retrieve the segments
     const userText = appState.userTextsIndex!.get(userTextId)!
     const newSegments = [...userText.segments]
+    // Used to replace the segments in other user texts
+    const joinedSegmentsTexts = []
 
     // Join the segments
     const joinedSegment: TextSegment = {
@@ -304,14 +302,29 @@ export async function handleJoinSegmentsInUserTextRequest(appState: AppState, re
     for (let i = request.startSegmentIndex; i <= request.endSegmentIndex; i++) {
         // Create the new segment text
         joinedSegment.text += newSegments[i].text
+        joinedSegmentsTexts.push(newSegments[i].text)
     }
 
     // Update the segments
     newSegments.splice(request.startSegmentIndex, request.endSegmentIndex - request.startSegmentIndex + 1, joinedSegment)
-    // Categorize the new segment
-    updateSegmentTypes(newSegments, appState)
-    // Update the user text
-    userText.segments = newSegments
+
+    if (request.updateAllOccurrencesInAllUserTexts) {
+        for (const [userTextToUpdateId, userTextToUpdate] of appState.userTextsIndex!.entries()) {
+            joinSegmentsInUserText(userTextToUpdate, joinedSegmentsTexts)
+            // Categorize the new segment
+            updateSegmentTypes(userTextToUpdate.segments, appState)
+        }
+    } else if (request.updateAllOccurrencesInCurrentTextUser) {
+        joinSegmentsInUserText(userText, joinedSegmentsTexts)
+        // Categorize the new segment
+        updateSegmentTypes(userText.segments, appState)
+    } else {
+        // Update the user text
+        userText.segments = newSegments 
+        // Categorize the new segment
+        updateSegmentTypes(userText.segments, appState)
+    }
+
     // Save the user text list
     await state.saveUserTexts(appState)
 
