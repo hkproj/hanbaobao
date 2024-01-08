@@ -35,14 +35,14 @@ function createContextMenus() {
 
     chrome.contextMenus.create({
         contexts: ["all"],
-        id: "reader-service",
-        title: "Chinese Reader"
+        id: "user-texts-list",
+        title: "User Texts"
     })
 
     chrome.contextMenus.create({
         contexts: ["all"],
-        id: "user-texts-list",
-        title: "User Texts"
+        id: "reader-service",
+        title: "Chinese Reader"
     })
 
     chrome.contextMenus.onClicked.addListener((info, tab) => {
