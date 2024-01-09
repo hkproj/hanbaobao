@@ -1,7 +1,7 @@
 import * as messages from '../../shared/messages'
 import { ResourceLoadStatus } from "../../shared/loading";
 import { AppState } from './state';
-import { TextSegment, UserText, addUserText as generateIdAndAddUserText, segmentAndCategorizeText, updateSegmentTypes, updateSegmentTypesForAllUserTexts, joinSegmentsInUserText } from "../../shared/userTexts";
+import * as userTexts from "../../shared/userTexts";
 import * as chinese from "../../shared/chineseUtils";
 import * as jieba from "../../shared/jieba";
 import * as state from "./state";
@@ -13,9 +13,9 @@ export async function handleAddNewUserTextRequest(appState: AppState, addNewUser
         return addNewUserTextResponse
     }
 
-    const segments = segmentAndCategorizeText(addNewUserTextRequest.text, appState)
+    const segments = userTexts.segmentAndCategorizeText(addNewUserTextRequest.text, appState)
 
-    const userTextToAdd: UserText = {
+    const userTextToAdd: userTexts.UserText = {
         id: "", // It will be assigned a new unique id
         name: "New user text",
         url: addNewUserTextRequest.url,
@@ -23,7 +23,7 @@ export async function handleAddNewUserTextRequest(appState: AppState, addNewUser
         createdOn: new Date().toISOString(),
     }
 
-    const [newUserText, newUserTextsIndex] = await generateIdAndAddUserText(appState.userTextsIndex!, userTextToAdd)
+    const [newUserText, newUserTextsIndex] = await userTexts.addUserText(appState.userTextsIndex!, userTextToAdd)
 
     // Save the new user text and the list
     addNewUserTextResponse.id = newUserText.id
@@ -91,7 +91,7 @@ export async function handleAddKnownWordRequest(appState: AppState, request: mes
     if (appState.knownWordsLoadStatus == ResourceLoadStatus.Loaded && appState.knownWordsIndex?.has(request.word) == false) {
         const newKnownWords = appState.knownWordsList!.concat([request.word])
         await state.saveNewKnownWords(appState, newKnownWords)
-        updateSegmentTypesForAllUserTexts(appState)
+        userTexts.updateSegmentTypesForAllUserTexts(appState)
         await state.saveUserTexts(appState)
     }
     return addKnownWordsResponse
@@ -102,7 +102,7 @@ export async function handleRemoveKnownWordRequest(appState: AppState, request: 
     if (appState.knownWordsLoadStatus == ResourceLoadStatus.Loaded && appState.knownWordsIndex?.has(request.word) == true) {
         const newKnownWords = appState.knownWordsList!.filter((word) => word != request.word)
         await state.saveNewKnownWords(appState, newKnownWords)
-        updateSegmentTypesForAllUserTexts(appState)
+        userTexts.updateSegmentTypesForAllUserTexts(appState)
         await state.saveUserTexts(appState)
     }
     return removeKnownWordsResponse
@@ -207,10 +207,6 @@ export function handleGetUserTextsListRequest(appState: AppState, request: messa
 }
 
 export async function handleSplitSegmentsInUserTextRequest(appState: AppState, request: messages.SplitSegmentsInUserTextRequest): Promise<messages.SplitSegmentsInUserTextResponse> {
-    if (request.updateAllOccurrencesInAllUserTexts || request.updateAllOccurrencesInCurrentTextUser) {
-        throw new Error("Not implemented")
-    }
-
     const response: messages.SplitSegmentsInUserTextResponse = { dummy: messages.DUMMY_CONTENT }
 
     // Retrieve the user text
@@ -224,7 +220,7 @@ export async function handleSplitSegmentsInUserTextRequest(appState: AppState, r
 
     if (appState.userTextsIndex!.has(userTextId) == false) {
         // Not found
-        console.error(`JoinSegmentsInUserTextRequest: User text with id ${userTextId} not found`)
+        console.error(`SplitSegmentsInUserTextRequest: User text with id ${userTextId} not found`)
         return response
     }
 
@@ -232,6 +228,7 @@ export async function handleSplitSegmentsInUserTextRequest(appState: AppState, r
     const userText = appState.userTextsIndex!.get(userTextId)!
     const newSegments = [...userText.segments]
     const segmentToSplit = newSegments[request.segmentIndex]
+    const originalText = segmentToSplit.text
 
     // Do not split if only composed of one character
     if (segmentToSplit.text.length <= 1) {
@@ -248,25 +245,38 @@ export async function handleSplitSegmentsInUserTextRequest(appState: AppState, r
 
     // Create the new segments
 
-    const newFirstSegment: TextSegment = {
+    const newFirstSegment: userTexts.TextSegment = {
         text: firstSegmentText,
         type: chinese.SegmentType.Unknown
     }
 
-    const newSecondSegment: TextSegment = {
+    const newSecondSegment: userTexts.TextSegment = {
         text: secondSegmentText,
         type: chinese.SegmentType.Unknown
     }
 
     // Update the segments list
     newSegments.splice(request.segmentIndex, 1, newFirstSegment, newSecondSegment)
-    // Categorize the new segments
-    updateSegmentTypes(newSegments, appState)
     // Update the user text
     userText.segments = newSegments
+    // Categorize the new segments
+    userTexts.updateSegmentTypes(userText.segments, appState)
+
+    if (request.updateAllOccurrencesInAllUserTexts) {
+        for (const [userTextToUpdateId, userTextToUpdate] of appState.userTextsIndex!.entries()) {
+            userTexts.splitSegmentsInUserText(userTextToUpdate, originalText, request.splitIndex)
+            // Categorize the new segment
+            userTexts.updateSegmentTypes(userTextToUpdate.segments, appState)
+        }
+    } else if (request.updateAllOccurrencesInCurrentTextUser) {
+        userTexts.splitSegmentsInUserText(userText, originalText, request.splitIndex)
+        // Categorize the new segment
+        userTexts.updateSegmentTypes(userText.segments, appState)
+    }
+
     // Save the user text list
     await state.saveUserTexts(appState)
-    
+
     return response
 }
 
@@ -294,7 +304,7 @@ export async function handleJoinSegmentsInUserTextRequest(appState: AppState, re
     const joinedSegmentsTexts = []
 
     // Join the segments
-    const joinedSegment: TextSegment = {
+    const joinedSegment: userTexts.TextSegment = {
         text: "",
         type: chinese.SegmentType.Unknown,
     }
@@ -307,22 +317,21 @@ export async function handleJoinSegmentsInUserTextRequest(appState: AppState, re
 
     // Update the segments
     newSegments.splice(request.startSegmentIndex, request.endSegmentIndex - request.startSegmentIndex + 1, joinedSegment)
+    // Update the user text
+    userText.segments = newSegments
+    // Categorize the new segment
+    userTexts.updateSegmentTypes(userText.segments, appState)
 
     if (request.updateAllOccurrencesInAllUserTexts) {
         for (const [userTextToUpdateId, userTextToUpdate] of appState.userTextsIndex!.entries()) {
-            joinSegmentsInUserText(userTextToUpdate, joinedSegmentsTexts)
+            userTexts.joinSegmentsInUserText(userTextToUpdate, joinedSegmentsTexts)
             // Categorize the new segment
-            updateSegmentTypes(userTextToUpdate.segments, appState)
+            userTexts.updateSegmentTypes(userTextToUpdate.segments, appState)
         }
     } else if (request.updateAllOccurrencesInCurrentTextUser) {
-        joinSegmentsInUserText(userText, joinedSegmentsTexts)
+        userTexts.joinSegmentsInUserText(userText, joinedSegmentsTexts)
         // Categorize the new segment
-        updateSegmentTypes(userText.segments, appState)
-    } else {
-        // Update the user text
-        userText.segments = newSegments 
-        // Categorize the new segment
-        updateSegmentTypes(userText.segments, appState)
+        userTexts.updateSegmentTypes(userText.segments, appState)
     }
 
     // Save the user text list

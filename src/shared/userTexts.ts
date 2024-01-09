@@ -55,6 +55,38 @@ export function updateSegmentTypes(segments: Array<TextSegment>, appState: AppSt
     chinese.categorizeSegments(segments, appState)
 }
 
+export function splitSegmentsInUserText(userText: UserText, originalText: string, splitIndex: number): void {
+    if (splitIndex <= 0 || splitIndex >= originalText.length) {
+        throw new Error("Invalid split index")
+    }
+
+    if (originalText.trim().length == 0) {
+        throw new Error("Cannot split an empty segment")
+    }
+
+    let i = 0;
+
+    while (i < userText.segments.length) {
+
+        // If there's a segment matching the original text, then split it
+        if (userText.segments[i].text == originalText) {
+            // Split the segment according to the split index
+            const firstSegmentText = originalText.substring(0, splitIndex)
+            const secondSegmentText = originalText.substring(splitIndex)
+
+            userText.segments[i].text = firstSegmentText
+            userText.segments[i].type = chinese.SegmentType.Unknown
+
+            userText.segments.splice(i + 1, 0, {
+                text: secondSegmentText,
+                type: chinese.SegmentType.Unknown,
+            })
+        }
+
+        i++
+    }
+}
+
 export function joinSegmentsInUserText(userText: UserText, segmentTexts: string[]): void {
     if (segmentTexts.length < 2) {
         throw new Error("Cannot join less than two segments")

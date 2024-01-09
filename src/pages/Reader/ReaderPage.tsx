@@ -23,14 +23,17 @@ const EMPTY_RESULTS: SearchTermResponse = {
   dummy: DUMMY_CONTENT
 }
 
-enum JoinSegmentGloballyType {
+enum SegmentGlobalOperationType {
   CurrentUserText = 1,
   AllUserTexts = 2
 }
 
-const JOIN_SEGMENT_KEY = 'KeyW'
-const SPLIT_SEGMENT_KEY = 'KeyQ'
+const JOIN_SEGMENT_KEY = 'KeyX'
 const JOIN_SEGMENT_GLOBALLY_KEY = 'KeyM'
+
+const SPLIT_SEGMENT_KEY = 'KeyZ'
+const SPLIT_SEGMENT_GLOBALLY_KEY = 'KeyN'
+
 const SET_KNOWN_WORD_KEY = 'Digit2'
 const SET_UNKNOWN_WORD_KEY = 'Digit1'
 
@@ -49,10 +52,15 @@ const Reader = () => {
   // Indicates the index of the segment under the mouse
   const [hoverSegmentIndex, setSelectedSegmentIndex] = useState<number | null>(null);
 
-  const [joinSegmentGloballyModal, setJoinSegmentGloballyModal] = useState(false);
-  const [joinSegmentGloballyType, setJoinSegmentGloballyType] = useState<JoinSegmentGloballyType>(JoinSegmentGloballyType.CurrentUserText);
-  const [joinSegmentGloballyStartIndex, setJoinSegmentGloballyStartIndex] = useState<number | null>(null);
-  const [joinSegmentGloballyEndIndex, setJoinSegmentGloballyEndIndex] = useState<number | null>(null);
+  const [joinSegmentGlobalModal, setJoinSegmentGlobalModal] = useState(false);
+  const [joinSegmentGlobalType, setJoinSegmentGlobalType] = useState<SegmentGlobalOperationType>(SegmentGlobalOperationType.CurrentUserText);
+  const [joinSegmentGlobalStartIndex, setJoinSegmentGlobalStartIndex] = useState<number | null>(null);
+  const [joinSegmentGlobalEndIndex, setJoinSegmentGlobalEndIndex] = useState<number | null>(null);
+
+  const [splitSegmentGlobalModal, setSplitSegmentGlobalModal] = useState(false);
+  const [splitSegmentGlobalType, setSplitSegmentGlobalType] = useState<SegmentGlobalOperationType>(SegmentGlobalOperationType.CurrentUserText);
+  const [splitSegmentGlobalSegmentIndex, setSplitSegmentGlobalSegmentIndex] = useState<number | null>(null);
+  const [splitSegmentGlobalSplitIndex, setSplitSegmentGlobalSplitIndex] = useState<number | null>(null);
 
   const [searchTermResponse, setSearchTermResponse] = useState<SearchTermResponse>(EMPTY_RESULTS);
 
@@ -103,7 +111,7 @@ const Reader = () => {
     return await chrome.runtime.sendMessage(request)
   }
 
-  async function splitSegments(segmentIndex: number, splitIndex: number) {
+  async function splitSegments(segmentIndex: number, splitIndex: number, globalOperationType: SegmentGlobalOperationType | null = null) {
     const request: SplitSegmentsInUserTextRequest = {
       type: RequestType.SplitSegmentsInUserText,
       segmentIndex: segmentIndex,
@@ -113,13 +121,21 @@ const Reader = () => {
       userTextId: userTextId!
     }
 
+    if (globalOperationType != null) {
+      if (globalOperationType == SegmentGlobalOperationType.CurrentUserText) {
+        request.updateAllOccurrencesInCurrentTextUser = true
+      } else if (globalOperationType == SegmentGlobalOperationType.AllUserTexts) {
+        request.updateAllOccurrencesInAllUserTexts = true
+      }
+    }
+
     await chrome.runtime.sendMessage(request)
 
     // Reload the user text
     await reloadUserText()
   }
 
-  async function joinSegments(startSegmentIndex: number, endSegmentIndex: number, globalType: JoinSegmentGloballyType | null = null) {
+  async function joinSegments(startSegmentIndex: number, endSegmentIndex: number, globalOperationType: SegmentGlobalOperationType | null = null) {
     const request: JoinSegmentsInUserTextRequest = {
       type: RequestType.JoinSegmentsInUserText,
       startSegmentIndex: startSegmentIndex,
@@ -129,10 +145,10 @@ const Reader = () => {
       userTextId: userTextId!
     }
 
-    if (JoinSegmentGloballyType != null) {
-      if (globalType == JoinSegmentGloballyType.CurrentUserText) {
+    if (globalOperationType != null) {
+      if (globalOperationType == SegmentGlobalOperationType.CurrentUserText) {
         request.updateAllOccurrencesInCurrentTextUser = true
-      } else if (globalType == JoinSegmentGloballyType.AllUserTexts) {
+      } else if (globalOperationType == SegmentGlobalOperationType.AllUserTexts) {
         request.updateAllOccurrencesInAllUserTexts = true
       }
     }
@@ -160,7 +176,7 @@ const Reader = () => {
   }
 
   function onKeyUpDocument(event: KeyboardEvent) {
-    if (event.code == SPLIT_SEGMENT_KEY) {
+    if (event.code == SPLIT_SEGMENT_KEY || event.code == SPLIT_SEGMENT_GLOBALLY_KEY) {
       // Split the current segment into two segments based on the cursor position
       if (hoverSegmentNode != null && hoverSegmentNode != null && hoverSegmentOffset != null) {
         const segmentText = userText!.segments[hoverSegmentIndex!].text;
@@ -176,8 +192,15 @@ const Reader = () => {
           return
         }
 
-        // Split the segment
-        splitSegments(hoverSegmentIndex!, hoverSegmentOffset!).catch((error) => { console.error(error) })
+        if (event.code == SPLIT_SEGMENT_GLOBALLY_KEY) {
+          // Ask the user where to split the segment
+          setSplitSegmentGlobalSegmentIndex(hoverSegmentIndex)
+          setSplitSegmentGlobalSplitIndex(hoverSegmentOffset)
+          setSplitSegmentGlobalModal(true)
+        } else {
+          // Split the segment
+          splitSegments(hoverSegmentIndex!, hoverSegmentOffset!, null).catch((error) => { console.error(error) })
+        }
       }
     } else if (event.code == JOIN_SEGMENT_KEY || event.code == JOIN_SEGMENT_GLOBALLY_KEY) {
       // Join the selected segments together
@@ -211,9 +234,9 @@ const Reader = () => {
 
       if (event.code == JOIN_SEGMENT_GLOBALLY_KEY) {
         // Ask the user where to join the segments
-        setJoinSegmentGloballyStartIndex(startSegmentIndex)
-        setJoinSegmentGloballyEndIndex(endSegmentIndex)
-        setJoinSegmentGloballyModal(true)
+        setJoinSegmentGlobalStartIndex(startSegmentIndex)
+        setJoinSegmentGlobalEndIndex(endSegmentIndex)
+        setJoinSegmentGlobalModal(true)
       } else if (event.code == JOIN_SEGMENT_KEY) {
         // Join the segments
         joinSegments(startSegmentIndex, endSegmentIndex, null).catch((error) => { console.error(error) })
@@ -316,33 +339,71 @@ const Reader = () => {
     setIsInTitleEditMode(true)
   }
 
-  function handleCloseJoinSegmentGloballyModal() {
-    setJoinSegmentGloballyModal(false)
-    setJoinSegmentGloballyType(JoinSegmentGloballyType.CurrentUserText)
+  function handleCloseJoinSegmentGlobalModal() {
+    setJoinSegmentGlobalModal(false)
+    setJoinSegmentGlobalType(SegmentGlobalOperationType.CurrentUserText)
+    setJoinSegmentGlobalStartIndex(null)
+    setJoinSegmentGlobalEndIndex(null)
   }
 
-  function getSelectedSegmentsText() {
-    if (joinSegmentGloballyStartIndex == null || joinSegmentGloballyEndIndex == null) {
-      throw new Error('Invalid join segment globally indexes')
+  function handleCloseSplitSegmentGlobalModal() {
+    setSplitSegmentGlobalModal(false)
+    setSplitSegmentGlobalType(SegmentGlobalOperationType.CurrentUserText)
+    setSplitSegmentGlobalSegmentIndex(null)
+    setSplitSegmentGlobalSplitIndex(null)
+  }
+
+  function getSelectedJoinSegmentsText() {
+    if (joinSegmentGlobalStartIndex == null || joinSegmentGlobalEndIndex == null) {
+      throw new Error('Invalid join segment (global) indexes')
     }
 
     let selectedSegmentsText = ""
-    for (let i = joinSegmentGloballyStartIndex; i <= joinSegmentGloballyEndIndex; i++) {
+    for (let i = joinSegmentGlobalStartIndex; i <= joinSegmentGlobalEndIndex; i++) {
       selectedSegmentsText += userText!.segments[i].text
     }
-    return selectedSegmentsText
+    return (<p>
+      Selected text: <strong>{selectedSegmentsText}</strong>
+    </p>)
   }
 
-  async function handleJoinGlobally() {
-    if (joinSegmentGloballyStartIndex == null || joinSegmentGloballyEndIndex == null) {
-      throw new Error('Invalid join segment globally indexes')
+  async function handleJoinSegmentsGlobal() {
+    if (joinSegmentGlobalStartIndex == null || joinSegmentGlobalEndIndex == null) {
+      throw new Error('Invalid join segment (global) indexes')
     }
 
-    setJoinSegmentGloballyModal(false)
-    setJoinSegmentGloballyType(JoinSegmentGloballyType.CurrentUserText)
-    setJoinSegmentGloballyStartIndex(null)
-    setJoinSegmentGloballyEndIndex(null)
-    await joinSegments(joinSegmentGloballyStartIndex!, joinSegmentGloballyEndIndex!, joinSegmentGloballyType)
+    setJoinSegmentGlobalModal(false)
+    setJoinSegmentGlobalType(SegmentGlobalOperationType.CurrentUserText)
+    setJoinSegmentGlobalStartIndex(null)
+    setJoinSegmentGlobalEndIndex(null)
+    await joinSegments(joinSegmentGlobalStartIndex!, joinSegmentGlobalEndIndex!, joinSegmentGlobalType)
+  }
+
+  async function handleSplitSegmentsGlobal() {
+    if (splitSegmentGlobalSegmentIndex == null || splitSegmentGlobalSplitIndex == null) {
+      throw new Error('Invalid split segment (global) indexes')
+    }
+
+    setSplitSegmentGlobalModal(false)
+    setSplitSegmentGlobalType(SegmentGlobalOperationType.CurrentUserText)
+    setSplitSegmentGlobalSegmentIndex(null)
+    setSplitSegmentGlobalSplitIndex(null)
+    await splitSegments(splitSegmentGlobalSegmentIndex!, splitSegmentGlobalSplitIndex!, splitSegmentGlobalType)
+  }
+
+  function getSelectedSplitSegmentText() {
+    if (splitSegmentGlobalSegmentIndex == null || splitSegmentGlobalSplitIndex == null) {
+      throw new Error('Invalid split segment (global) indexes')
+    }
+
+    const originalText = userText!.segments[splitSegmentGlobalSegmentIndex!].text
+    const newSeg1 = originalText.substring(0, splitSegmentGlobalSplitIndex!)
+    const newSeg2 = originalText.substring(splitSegmentGlobalSplitIndex!)
+
+    return (<p>
+      Word 1: <strong>{newSeg1}</strong><br />
+      Word 2: <strong>{newSeg2}</strong>
+    </p>)
   }
 
   function getTitleView() {
@@ -379,34 +440,60 @@ const Reader = () => {
 
   return (
     <>
-      <Modal show={joinSegmentGloballyModal} onHide={handleCloseJoinSegmentGloballyModal}>
+      <Modal show={joinSegmentGlobalModal} onHide={handleCloseJoinSegmentGlobalModal}>
         <Modal.Header closeButton>
-          <Modal.Title>Where do you want to join the two words?</Modal.Title>
+          <Modal.Title>Where else do you want to join the two words?</Modal.Title>
         </Modal.Header>
         <Modal.Body>
-          <p>
-            Selected text: <strong>{joinSegmentGloballyModal ? getSelectedSegmentsText() : ""}</strong>
-          </p>
+          {joinSegmentGlobalModal && getSelectedJoinSegmentsText()}
           <Form>
             <Form.Check
               type={'radio'}
               id={'jointype-current'}
               label={'Current text'}
-              checked={joinSegmentGloballyType == JoinSegmentGloballyType.CurrentUserText}
-              onClick={() => setJoinSegmentGloballyType(JoinSegmentGloballyType.CurrentUserText)}
+              checked={joinSegmentGlobalType == SegmentGlobalOperationType.CurrentUserText}
+              onClick={() => setJoinSegmentGlobalType(SegmentGlobalOperationType.CurrentUserText)}
             />
             <Form.Check
               type={'radio'}
               id={'jointype-all'}
               label={'All texts'}
-              checked={joinSegmentGloballyType == JoinSegmentGloballyType.AllUserTexts}
-              onClick={() => setJoinSegmentGloballyType(JoinSegmentGloballyType.AllUserTexts)}
+              checked={joinSegmentGlobalType == SegmentGlobalOperationType.AllUserTexts}
+              onClick={() => setJoinSegmentGlobalType(SegmentGlobalOperationType.AllUserTexts)}
             />
           </Form>
         </Modal.Body>
         <Modal.Footer>
-          <Button variant="secondary" onClick={handleCloseJoinSegmentGloballyModal}>Cancel</Button>
-          <Button variant="primary" onClick={() => handleJoinGlobally().catch((error) => console.error(error))}>Join</Button>
+          <Button variant="secondary" onClick={handleCloseJoinSegmentGlobalModal}>Cancel</Button>
+          <Button variant="primary" onClick={() => handleJoinSegmentsGlobal().catch((error) => console.error(error))}>Join</Button>
+        </Modal.Footer>
+      </Modal>
+      <Modal show={splitSegmentGlobalModal} onHide={handleCloseSplitSegmentGlobalModal}>
+        <Modal.Header closeButton>
+          <Modal.Title>Where else do you want to split the selected word?</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          {splitSegmentGlobalModal && getSelectedSplitSegmentText()}
+          <Form>
+            <Form.Check
+              type={'radio'}
+              id={'splittype-current'}
+              label={'Current text'}
+              checked={splitSegmentGlobalType == SegmentGlobalOperationType.CurrentUserText}
+              onClick={() => setSplitSegmentGlobalType(SegmentGlobalOperationType.CurrentUserText)}
+            />
+            <Form.Check
+              type={'radio'}
+              id={'splittype-all'}
+              label={'All texts'}
+              checked={splitSegmentGlobalType == SegmentGlobalOperationType.AllUserTexts}
+              onClick={() => setSplitSegmentGlobalType(SegmentGlobalOperationType.AllUserTexts)}
+            />
+          </Form>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={handleCloseSplitSegmentGlobalModal}>Cancel</Button>
+          <Button variant="primary" onClick={() => handleSplitSegmentsGlobal().catch((error) => console.error(error))}>Split</Button>
         </Modal.Footer>
       </Modal>
       <Container fluid={true}>
