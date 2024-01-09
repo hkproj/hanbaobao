@@ -133,13 +133,13 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 })
 
 chrome.action.onClicked.addListener(async (tab) => {
-    state.toggleSearchService(appState)
+    await state.toggleSearchService(appState)
     updateActionBadgeText()
 })
 
 chrome.runtime.onInstalled.addListener(async () => {
     // Read configuration or set default values if missing
-    state.loadConfiguration(appState)
+    await state.loadConfiguration(appState)
     // Update action badge texts
     updateActionBadgeText()
 });
