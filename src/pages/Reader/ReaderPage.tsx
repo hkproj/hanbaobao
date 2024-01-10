@@ -1,6 +1,6 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 
-import { Button, Col, Container, FormControl, Row, Modal, Form } from 'react-bootstrap'
+import { Button, Container, FormControl, Modal, Form } from 'react-bootstrap'
 import { AddKnownWordRequest, DUMMY_CONTENT, GetUserTextRequest, GetUserTextResponse, JoinSegmentsInUserTextRequest, RemoveKnownWordRequest, RequestType, SearchTermRequest, SearchTermResponse, SplitSegmentsInUserTextRequest, UpdateUserTextRequest, } from '../../shared/messages'
 import { ResourceLoadStatus } from '../../shared/loading';
 
@@ -9,7 +9,7 @@ import './ReaderPage.scss';
 import { ResultsViewer } from './ResultsViewer';
 import { getWordUnderCursor } from '../Content/textSelect';
 import { SegmentType } from '../../shared/chineseUtils';
-import { TextSegment, UserText } from '../../shared/userTexts';
+import { UserText } from '../../shared/userTexts';
 
 const EMPTY_RESULTS: SearchTermResponse = {
   dictionary: {
@@ -55,11 +55,13 @@ const Reader = () => {
   // Indicates the index of the segment under the mouse
   const [hoverSegmentIndex, setSelectedSegmentIndex] = useState<number | null>(null);
 
+  // Join segments modal
   const [joinSegmentGlobalModal, setJoinSegmentGlobalModal] = useState(false);
   const [joinSegmentGlobalType, setJoinSegmentGlobalType] = useState<SegmentGlobalOperationType>(SegmentGlobalOperationType.CurrentUserText);
   const [joinSegmentGlobalStartIndex, setJoinSegmentGlobalStartIndex] = useState<number | null>(null);
   const [joinSegmentGlobalEndIndex, setJoinSegmentGlobalEndIndex] = useState<number | null>(null);
 
+  // Split segments modal
   const [splitSegmentGlobalModal, setSplitSegmentGlobalModal] = useState(false);
   const [splitSegmentGlobalType, setSplitSegmentGlobalType] = useState<SegmentGlobalOperationType>(SegmentGlobalOperationType.CurrentUserText);
   const [splitSegmentGlobalSegmentIndex, setSplitSegmentGlobalSegmentIndex] = useState<number | null>(null);
@@ -304,31 +306,6 @@ const Reader = () => {
     };
   }, [onKeyUpDocument, onMouseMoveDocument]);
 
-  function getTextView() {
-    if (userTextId == null) {
-      return <p>No text selected.</p>;
-    } else if (userTextLoadingStatus != ResourceLoadStatus.Loaded) {
-      return <p>Loading...</p>;
-    } else {
-      return <div className="segment-list" onMouseMove={onMouseMoveSegmentList}>
-        {userText!.segments.map((segment, index) => {
-          let segmentType = segment.type
-
-          let segmentClass = "segment "
-          if (segmentType == SegmentType.Ignored) {
-            segmentClass += "segment-ignored"
-          } else if (segmentType == SegmentType.Unknown) {
-            segmentClass += "segment-unknown"
-          } else if (segmentType == SegmentType.Known) {
-            segmentClass += "segment-known"
-          }
-
-          return <span data-segment-index={index} className={segmentClass} key={index}>{segment.text}</span>
-        })}
-      </div>
-    }
-  }
-
   function saveNewTitle() {
     const newUserText = { ...userText!, name: newTitle }
     saveUserText(newUserText).then(() => {
@@ -438,6 +415,31 @@ const Reader = () => {
           </div>
         </>
       }
+    }
+  }
+
+  function getTextView() {
+    if (userTextId == null) {
+      return <p>No text selected.</p>;
+    } else if (userTextLoadingStatus != ResourceLoadStatus.Loaded) {
+      return <p>Loading...</p>;
+    } else {
+      return <div className="segment-list" onMouseMove={onMouseMoveSegmentList}>
+        {userText!.segments.map((segment, index) => {
+          let segmentType = segment.type
+
+          let segmentClass = "segment "
+          if (segmentType == SegmentType.Ignored) {
+            segmentClass += "segment-ignored"
+          } else if (segmentType == SegmentType.Unknown) {
+            segmentClass += "segment-unknown"
+          } else if (segmentType == SegmentType.Known) {
+            segmentClass += "segment-known"
+          }
+
+          return <span data-segment-index={index} className={segmentClass} key={index}>{segment.text}</span>
+        })}
+      </div>
     }
   }
 
