@@ -455,14 +455,14 @@ const Reader = () => {
             <Form.Check
               type={'radio'}
               id={'jointype-current'}
-              label={'Current text'}
+              label={CURRENT_TEXT_LABEL}
               checked={joinSegmentGlobalType == SegmentGlobalOperationType.CurrentUserText}
               onClick={() => setJoinSegmentGlobalType(SegmentGlobalOperationType.CurrentUserText)}
             />
             <Form.Check
               type={'radio'}
               id={'jointype-all'}
-              label={'All saved texts'}
+              label={ALL_USER_TEXTS_LABEL}
               checked={joinSegmentGlobalType == SegmentGlobalOperationType.AllUserTexts}
               onClick={() => setJoinSegmentGlobalType(SegmentGlobalOperationType.AllUserTexts)}
             />
@@ -483,14 +483,14 @@ const Reader = () => {
             <Form.Check
               type={'radio'}
               id={'splittype-current'}
-              label={'Current text'}
+              label={CURRENT_TEXT_LABEL}
               checked={splitSegmentGlobalType == SegmentGlobalOperationType.CurrentUserText}
               onClick={() => setSplitSegmentGlobalType(SegmentGlobalOperationType.CurrentUserText)}
             />
             <Form.Check
               type={'radio'}
               id={'splittype-all'}
-              label={'All saved texts'}
+              label={ALL_USER_TEXTS_LABEL}
               checked={splitSegmentGlobalType == SegmentGlobalOperationType.AllUserTexts}
               onClick={() => setSplitSegmentGlobalType(SegmentGlobalOperationType.AllUserTexts)}
             />
