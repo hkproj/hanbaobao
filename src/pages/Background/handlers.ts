@@ -43,11 +43,16 @@ export function handleSearchTermRequest(appState: AppState, request: messages.Se
         serviceEnabled: appState.searchServiceEnabled
     }
 
-    if (appState.dictionaryLoadStatus != ResourceLoadStatus.Loaded || (!appState.searchServiceEnabled && !searchTermRequest.ignoreDisabledStatus)) {
+    if (appState.dictionaryLoadStatus != ResourceLoadStatus.Loaded) {
         return searchResponse
     }
 
-    if (appState.knownWordsLoadStatus != ResourceLoadStatus.Loaded || (!appState.knownWordsEnabled && !searchTermRequest.ignoreDisabledStatus)) {
+    if (appState.knownWordsLoadStatus != ResourceLoadStatus.Loaded && appState.knownWordsEnabled) {
+        return searchResponse
+    }
+
+    // In case the service is disabled, but the request is not coming from the reader page
+    if (appState.searchServiceEnabled == false && searchTermRequest.ignoreDisabledStatus == false) {
         return searchResponse
     }
 
