@@ -24,7 +24,7 @@ export function findNextTextNode(root: Node, previous: Node): Node | null {
     }
 }
 
-export function getWordUnderCursor(event: MouseEvent): [string, Node|null] {
+export function getWordUnderCursor(event: MouseEvent | React.MouseEvent<HTMLDivElement>): [string, Node|null] {
     var range, textNode, offset
     // Original code: https://stackoverflow.com/a/30606508/739636
     // @ts-ignore

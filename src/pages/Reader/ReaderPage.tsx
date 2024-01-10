@@ -181,6 +181,11 @@ const Reader = () => {
   }
 
   function onKeyUpDocument(event: KeyboardEvent) {
+    // If the user is editing the title, do not handle the key up event
+    if (isInTitleEditMode) {
+      return
+    }
+
     if (event.code == SPLIT_SEGMENT_KEY || event.code == SPLIT_SEGMENT_GLOBALLY_KEY) {
       // Split the current segment into two segments based on the cursor position
       if (hoverSegmentNode != null && hoverSegmentNode != null && hoverSegmentOffset != null) {
@@ -260,6 +265,19 @@ const Reader = () => {
   }
 
   function onMouseMoveSegmentList(event: React.MouseEvent<HTMLDivElement>) {
+    // Search the dictionary
+    const [wordUnderCursor, nodeUnderCursor] = getWordUnderCursor(event)
+    if (!(wordUnderCursor == "" || nodeUnderCursor == null)) {
+      // Send request to background service to search the dictionary
+      const request: SearchTermRequest = { type: RequestType.SearchTerm, searchTerm: wordUnderCursor, ignoreDisabledStatus: true }
+      chrome.runtime.sendMessage(request)
+        .then((response: SearchTermResponse) => {
+          if (response != null) {
+            setSearchTermResponse(response)
+          }
+        })
+    }
+
     // Always reset the selection
     setSelectedSegmentNode(null)
     setSelectedSegmentOffset(null)
@@ -280,31 +298,12 @@ const Reader = () => {
     }
   }
 
-  function onMouseMoveDocument(event: MouseEvent) {
-    // Search the dictionary
-    const [wordUnderCursor, nodeUnderCursor] = getWordUnderCursor(event)
-    if (wordUnderCursor == "" || nodeUnderCursor == null) {
-      return
-    }
-
-    const request: SearchTermRequest = { type: RequestType.SearchTerm, searchTerm: wordUnderCursor, ignoreDisabledStatus: true }
-
-    chrome.runtime.sendMessage(request)
-      .then((response: SearchTermResponse) => {
-        if (response != null) {
-          setSearchTermResponse(response)
-        }
-      })
-  }
-
   useEffect(() => {
     document.addEventListener("keyup", onKeyUpDocument);
-    document.addEventListener("mousemove", onMouseMoveDocument);
     return () => {
       document.removeEventListener("keyup", onKeyUpDocument);
-      document.removeEventListener("mousemove", onMouseMoveDocument);
     };
-  }, [onKeyUpDocument, onMouseMoveDocument]);
+  }, [onKeyUpDocument]);
 
   function saveNewTitle() {
     const newUserText = { ...userText!, name: newTitle }
@@ -424,7 +423,7 @@ const Reader = () => {
     } else if (userTextLoadingStatus != ResourceLoadStatus.Loaded) {
       return <p>Loading...</p>;
     } else {
-      return <div className="segment-list" onMouseMove={onMouseMoveSegmentList}>
+      return <div className="segment-list" tabIndex={0} onMouseMove={onMouseMoveSegmentList}>
         {userText!.segments.map((segment, index) => {
           let segmentType = segment.type
 
