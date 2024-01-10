@@ -1,5 +1,4 @@
 import { SegmentType } from "./chineseUtils";
-import { ConfigurationKey, readConfiguration, writeConfiguration } from "./configuration";
 import * as jieba from "./jieba";
 import { AppState } from "../pages/Background/state";
 import * as chinese from "./chineseUtils";

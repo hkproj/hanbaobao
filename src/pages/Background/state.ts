@@ -1,7 +1,7 @@
 import * as chinese from "../../shared/chineseUtils";
 import { ResourceLoadStatus } from "../../shared/loading";
 import * as jieba from "../../shared/jieba";
-import { UserText, addUserText } from "../../shared/userTexts";
+import { UserText } from "../../shared/userTexts";
 import { ConfigurationKey, readConfiguration, writeConfiguration } from "../../shared/configuration";
 import { createKnownWordCharacterIndex, createKnownWordIndex } from "../../shared/knownWords";
 

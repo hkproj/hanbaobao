@@ -3,7 +3,6 @@ import { ResourceLoadStatus } from "../../shared/loading";
 import { AppState } from './state';
 import * as userTexts from "../../shared/userTexts";
 import * as chinese from "../../shared/chineseUtils";
-import * as jieba from "../../shared/jieba";
 import * as state from "./state";
 
 export async function handleAddNewUserTextRequest(appState: AppState, addNewUserTextRequest: messages.AddNewUserTextRequest) {

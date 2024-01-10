@@ -1,4 +1,4 @@
-import React, { Component, useState } from 'react';
+import React from 'react';
 
 import { SearchTermResponse } from '../../shared/messages';
 import { parseTones, tonifyPinyin } from '../../shared/chineseUtils';

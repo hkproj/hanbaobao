@@ -1,4 +1,4 @@
-import { ChineseDictionaryEntry, ChineseDictionarySearchResults, HSKVocabularyEntry, SegmentType } from "./chineseUtils"
+import { ChineseDictionarySearchResults, HSKVocabularyEntry } from "./chineseUtils"
 import { ResourceLoadStatus } from "./loading"
 import { UserText } from "./userTexts";
 

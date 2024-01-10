@@ -1,6 +1,6 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 
-import { Button, Card, Col, Container, NavLink, Row, Modal } from 'react-bootstrap'
+import { Button, Card, Container, NavLink, Modal } from 'react-bootstrap'
 import 'bootstrap/dist/css/bootstrap.min.css'
 
 import moment from 'moment';

@@ -1,7 +1,6 @@
-import React, { Component, useState } from 'react';
+import React from 'react';
 
 import { SearchTermResponse } from '../../shared/messages';
-import { parseTones, tonifyPinyin } from '../../shared/chineseUtils';
 import { Card, Col, Container, Row } from 'react-bootstrap';
 
 const MAX_DICTIONARY_ENTRIES = 5;

@@ -1,6 +1,5 @@
 import React from 'react';
 import './OptionsPage.css';
-import Button from 'react-bootstrap/Button';
 import Tab from 'react-bootstrap/Tab';
 import Tabs from 'react-bootstrap/Tabs';
 import { Card, Container } from 'react-bootstrap';
