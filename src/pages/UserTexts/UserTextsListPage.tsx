@@ -72,9 +72,7 @@ const UserTextsListPage = () => {
           <Card>
             <Card.Body>
               <Card.Title>
-                <NavLink href={`reader.html?id=${userText.id}`}>
-                  {userText.name}
-                </NavLink>
+                📖 - <NavLink href={`reader.html?id=${userText.id}`}>{userText.name}</NavLink>
               </Card.Title>
               <span>
                 Created on {moment(createdOn).format('MMMM Do YYYY, HH:mm')}
@@ -101,7 +99,7 @@ const UserTextsListPage = () => {
       </Modal>
       <Container fluid={true}>
         <div className='row align-center'>
-          <h1>List of saved texts</h1>
+          <h1>🗃️ - List of saved texts</h1>
         </div>
         <div className="row">
           {getUserTextsListView()}

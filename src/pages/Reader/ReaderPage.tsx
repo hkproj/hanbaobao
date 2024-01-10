@@ -37,6 +37,9 @@ const SPLIT_SEGMENT_GLOBALLY_KEY = 'KeyN'
 const SET_KNOWN_WORD_KEY = 'Digit2'
 const SET_UNKNOWN_WORD_KEY = 'Digit1'
 
+const ALL_USER_TEXTS_LABEL = '🗃️ - All saved texts'
+const CURRENT_TEXT_LABEL = '📖 - Current text'
+
 const Reader = () => {
 
   const searchParams = new URLSearchParams(window.location.search);
@@ -457,7 +460,7 @@ const Reader = () => {
             <Form.Check
               type={'radio'}
               id={'jointype-all'}
-              label={'All texts'}
+              label={'All saved texts'}
               checked={joinSegmentGlobalType == SegmentGlobalOperationType.AllUserTexts}
               onClick={() => setJoinSegmentGlobalType(SegmentGlobalOperationType.AllUserTexts)}
             />
@@ -485,7 +488,7 @@ const Reader = () => {
             <Form.Check
               type={'radio'}
               id={'splittype-all'}
-              label={'All texts'}
+              label={'All saved texts'}
               checked={splitSegmentGlobalType == SegmentGlobalOperationType.AllUserTexts}
               onClick={() => setSplitSegmentGlobalType(SegmentGlobalOperationType.AllUserTexts)}
             />
