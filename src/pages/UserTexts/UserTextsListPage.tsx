@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 
-import { Button, Card, Container, NavLink, Modal } from 'react-bootstrap'
+import { Button, Card, Container, NavLink, Modal, CardHeader } from 'react-bootstrap'
 import 'bootstrap/dist/css/bootstrap.min.css'
 
 import moment from 'moment';
@@ -69,17 +69,17 @@ const UserTextsListPage = () => {
 
 
         return (
-          <Card>
+          <Card className='m-2 p-2' style={{ width: "25rem" }}>
             <Card.Body>
               <Card.Title>
-                📖 - <NavLink href={`reader.html?id=${userText.id}`}>{userText.name}</NavLink>
+                <NavLink href={`reader.html?id=${userText.id}`}>{userText.name}</NavLink>
               </Card.Title>
-              <span>
+              <Card.Text>
                 Created on {moment(createdOn).format('MMMM Do YYYY, HH:mm')}
-              </span>
+              </Card.Text>
               <Button className='m-3' variant='danger' onClick={() => { handleShowDeleteConfirmation(userText) }}>Delete</Button>
             </Card.Body>
-          </Card>
+          </Card >
         )
       })
     }
@@ -101,7 +101,7 @@ const UserTextsListPage = () => {
         <div className='row align-center'>
           <h1>🗃️ - List of saved texts</h1>
         </div>
-        <div className="row">
+        <div className="d-flex flex-row flex-wrap">
           {getUserTextsListView()}
         </div>
       </Container>
